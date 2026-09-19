@@ -26,4 +26,15 @@ window.TrelloPowerUp.initialize({
       },
     ];
   },
+  'card-back-section': function (t, options) {
+    return {
+      title: 'AI Assistant',
+      icon: 'https://cdn.glitch.com/1b42d7de-6e4f-499f-9762-3c583d7f6fa5%2Ficon-dark.png?1504104006241',
+      content: {
+        type: 'iframe',
+        url: t.signUrl('./section.html'),
+        height: 220,
+      },
+    };
+  },
 });

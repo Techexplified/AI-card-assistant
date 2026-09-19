@@ -10,6 +10,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         authorized: resolve(__dirname, 'authorized.html'),
+        section: resolve(__dirname, 'section.html'),
       },
     },
   },
