@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Card Readiness Score</title>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <style>
+      :root {
+        --color-primary: #5b4fe9;
+        --color-primary-hover: #4d41db;
+        --color-green: #16a34a;
+        --color-green-light: #f0fdf4;
+        --color-green-border: #bbf7d0;
+        --color-orange: #d97706;
+        --color-orange-light: #fffbeb;
+        --color-orange-border: #fde68a;
+        --color-red: #dc2626;
+        --color-red-light: #fef2f2;
+        --color-red-border: #fecaca;
+        --color-text-main: #172b4d;
+        --color-text-sub: #64748b;
+        --color-text-muted: #8c9bab;
+        --color-bg-gray: #f4f5f7;
+        --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', Ubuntu, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-family);
+        color: var(--color-text-main);
+        background-color: #ffffff;
+        padding: 16px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      #popup-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        max-width: 580px;
+        margin: 0 auto;
+      }
+
+      /* 1. Header Row */
+      .header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .header-icon-box {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background-color: #ede9fe;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6366f1;
+        flex-shrink: 0;
+      }
+
+      .header-icon-box svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .header-text {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--color-text-main);
+      }
+
+      .header-subtitle {
+        font-size: 12px;
+        color: var(--color-text-sub);
+      }
+
+      .btn-close {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: none;
+        background-color: var(--color-bg-gray);
+        color: var(--color-text-sub);
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.15s, color 0.15s;
+      }
+
+      .btn-close:hover {
+        background-color: #e2e8f0;
+        color: var(--color-text-main);
+      }
+
+      /* 2. Breadcrumb Row */
+      .breadcrumb-row {
+        background-color: var(--color-bg-gray);
+        border-radius: 8px;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--color-text-sub);
+      }
+
+      .breadcrumb-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .breadcrumb-left svg {
+        width: 14px;
+        height: 14px;
+        stroke: var(--color-text-sub);
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .breadcrumb-card-name {
+        font-weight: 600;
+        color: var(--color-text-main);
+      }
+
+      .breadcrumb-link {
+        color: #2563eb;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .breadcrumb-right {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--color-text-muted);
+      }
+
+      .breadcrumb-right svg {
+        width: 12px;
+        height: 12px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+      }
+
+      /* 3. Score Section (Two Columns) */
+      .score-section {
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        gap: 20px;
+        padding: 8px 10px;
+      }
+
+      /* Donut Ring */
+      .donut-wrapper {
+        position: relative;
+        width: 106px;
+        height: 106px;
+        min-width: 106px;
+        min-height: 106px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .donut-svg {
+        width: 106px;
+        height: 106px;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+      }
+
+      .donut-arc-magenta {
+        fill: transparent;
+        stroke: #f43f5e;
+        stroke-width: 12;
+      }
+
+      .donut-arc-blue {
+        fill: transparent;
+        stroke: #4f46e5;
+        stroke-width: 12;
+        stroke-linecap: round;
+        stroke-dasharray: 263.89;
+        stroke-dashoffset: 121.39; /* 54% */
+        transition: stroke-dashoffset 0.4s ease;
+      }
+
+      .donut-center-text {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .donut-score-value {
+        font-size: 24px;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--color-text-main);
+      }
+
+      .donut-score-label {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+      }
+
+      /* Status & Legend */
+      .score-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 180px;
+      }
+
+      .status-meta-header {
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--color-text-muted);
+      }
+
+      .current-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: var(--color-red-light);
+        border: 1px solid var(--color-red-border);
+        color: var(--color-red);
+        font-size: 13px;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        width: fit-content;
+      }
+
+      .legend-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-top: 2px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--color-text-main);
+      }
+
+      .legend-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .legend-dot.passing {
+        background-color: var(--color-green);
+      }
+
+      .legend-dot.partial {
+        background-color: var(--color-orange);
+      }
+
+      .legend-dot.missing {
+        background-color: var(--color-red);
+      }
+
+      .btn-rescan {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: #2563eb;
+        font-size: 12px;
+        font-weight: 600;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        margin-top: 3px;
+        transition: color 0.15s;
+        width: fit-content;
+      }
+
+      .btn-rescan:hover {
+        color: #1d4ed8;
+        text-decoration: underline;
+      }
+
+      /* 4. Status Scale Bar */
+      .scale-bar-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 6px;
+        background-color: #f8fafc;
+        padding: 4px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+      }
+
+      .scale-segment {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 7px 8px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        opacity: 0.55;
+      }
+
+      .scale-segment.active {
+        opacity: 1;
+        font-weight: 700;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      }
+
+      .scale-segment.needs-work {
+        background-color: var(--color-red-light);
+        color: var(--color-red);
+        border: 1px solid var(--color-red-border);
+      }
+
+      .scale-segment.almost-ready {
+        background-color: var(--color-orange-light);
+        color: var(--color-orange);
+        border: 1px solid var(--color-orange-border);
+      }
+
+      .scale-segment.ready {
+        background-color: var(--color-green-light);
+        color: var(--color-green);
+        border: 1px solid var(--color-green-border);
+      }
+
+      /* 5. Category Breakdown Section */
+      .breakdown-section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .breakdown-heading {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--color-text-main);
+      }
+
+      .category-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .category-card {
+        border-radius: 10px;
+        padding: 12px 14px;
+        background-color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      }
+
+      .category-card.passing {
+        border-color: var(--color-green-border);
+        background-color: #fafffc;
+      }
+
+      .category-card.partial {
+        border-color: var(--color-orange-border);
+        background-color: #fffefb;
+      }
+
+      .category-card.missing {
+        border-color: var(--color-red-border);
+        background-color: #fffbfa;
+      }
+
+      .category-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .category-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .category-icon-box {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .category-icon-box.passing {
+        background-color: var(--color-green-light);
+        color: var(--color-green);
+      }
+
+      .category-icon-box.partial {
+        background-color: var(--color-orange-light);
+        color: var(--color-orange);
+      }
+
+      .category-icon-box.missing {
+        background-color: var(--color-red-light);
+        color: var(--color-red);
+      }
+
+      .category-icon-box svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .category-title-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .category-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--color-text-main);
+      }
+
+      .category-desc {
+        font-size: 12px;
+      }
+
+      .category-desc.passing {
+        color: #059669;
+      }
+
+      .category-desc.partial {
+        color: #d97706;
+      }
+
+      .category-desc.missing {
+        color: #dc2626;
+      }
+
+      .category-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .category-score-text {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--color-text-main);
+      }
+
+      .category-badge-circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 800;
+        flex-shrink: 0;
+      }
+
+      .category-badge-circle.passing {
+        background-color: var(--color-green-light);
+        color: var(--color-green);
+      }
+
+      .category-badge-circle.partial {
+        background-color: var(--color-orange-light);
+        color: var(--color-orange);
+      }
+
+      .category-badge-circle.missing {
+        background-color: var(--color-red-light);
+        color: var(--color-red);
+      }
+
+      .category-bar-track {
+        width: 100%;
+        height: 6px;
+        border-radius: 9999px;
+        background-color: #f1f5f9;
+        overflow: hidden;
+      }
+
+      .category-bar-fill {
+        height: 100%;
+        border-radius: 9999px;
+        transition: width 0.4s ease;
+      }
+
+      .category-bar-fill.passing {
+        background-color: var(--color-green);
+      }
+
+      .category-bar-fill.partial {
+        background-color: var(--color-orange);
+      }
+
+      .category-bar-fill.missing {
+        background-color: var(--color-red);
+      }
+
+      /* 6. Footer Row */
+      .footer-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 10px;
+        border-top: 1px solid #f1f5f9;
+        font-size: 11px;
+        color: var(--color-text-sub);
+      }
+
+      .footer-left {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .footer-left svg {
+        width: 13px;
+        height: 13px;
+        stroke: var(--color-primary);
+        fill: none;
+        stroke-width: 2;
+      }
+
+      .footer-link-history {
+        color: #059669;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+      }
+
+      .footer-link-history:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="popup-container">
+      <!-- 1. Header Row -->
+      <header class="header-row">
+        <div class="header-left">
+          <div class="header-icon-box">
+            <!-- Circular Speedometer/Gauge Icon -->
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2v2M4.93 4.93l1.41 1.41M2 12h2M20 12h2M19.07 4.93l-1.41 1.41M12 6a6 6 0 0 0-6 6c0 2.22 1.21 4.16 3 5.2V19a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1.8c1.79-1.04 3-2.98 3-5.2a6 6 0 0 0-6-6z"></path>
+              <polyline points="12 12 15 9"></polyline>
+            </svg>
+          </div>
+          <div class="header-text">
+            <h1 class="header-title">Card Readiness Score</h1>
+            <span class="header-subtitle">AI analysis of your card's completeness</span>
+          </div>
+        </div>
+        <button class="btn-close" id="btn-close-popup" title="Close" aria-label="Close popup">×</button>
+      </header>
+
+      <!-- 2. Breadcrumb Row -->
+      <div class="breadcrumb-row">
+        <div class="breadcrumb-left">
+          <!-- Grid/Board Icon -->
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span class="breadcrumb-card-name" id="breadcrumb-card-name">Website Redesign</span>
+          <span>· in list</span>
+          <span class="breadcrumb-link" id="breadcrumb-list-name">In Progress</span>
+        </div>
+        <div class="breadcrumb-right">
+          <!-- Clock icon -->
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span id="breadcrumb-analyzed-at">Analyzed just now</span>
+        </div>
+      </div>
+
+      <!-- 3. Score Section (Two Columns) -->
+      <section class="score-section">
+        <!-- Left: Donut Ring -->
+        <div class="donut-wrapper">
+          <svg class="donut-svg" viewBox="0 0 100 100">
+            <circle class="donut-arc-magenta" cx="50" cy="50" r="42"></circle>
+            <circle class="donut-arc-blue" id="donut-progress-circle" cx="50" cy="50" r="42"></circle>
+          </svg>
+          <div class="donut-center-text">
+            <span class="donut-score-value" id="donut-score-value">54%</span>
+            <span class="donut-score-label">Readiness</span>
+          </div>
+        </div>
+
+        <!-- Right: Current Status & Counts -->
+        <div class="score-meta">
+          <span class="status-meta-header">CURRENT STATUS</span>
+          <div class="current-status-pill" id="current-status-pill">
+            <span class="status-dot">●</span>
+            <span id="current-status-text">Needs Work</span>
+          </div>
+
+          <div class="legend-list">
+            <div class="legend-item">
+              <span class="legend-dot passing"></span>
+              <span id="legend-passing-text">2 categories passing</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot partial"></span>
+              <span id="legend-partial-text">1 category partial</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot missing"></span>
+              <span id="legend-missing-text">3 categories missing</span>
+            </div>
+          </div>
+
+          <button class="btn-rescan" id="btn-rescan-card">
+            <span>🔄 Rescan card</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 4. Status Scale Bar -->
+      <div class="scale-bar-container" id="scale-bar-container">
+        <div class="scale-segment needs-work active" data-status="Needs Work">
+          <span>● Needs Work</span>
+        </div>
+        <div class="scale-segment almost-ready" data-status="Almost Ready">
+          <span>● Almost Ready</span>
+        </div>
+        <div class="scale-segment ready" data-status="Ready">
+          <span>● Ready</span>
+        </div>
+      </div>
+
+      <!-- 5. Category Breakdown Section -->
+      <section class="breakdown-section">
+        <h2 class="breakdown-heading">Category Breakdown</h2>
+        <div class="category-list" id="category-list">
+          <!-- Dynamically populated from readinessData.categories -->
+        </div>
+      </section>
+
+      <!-- 6. Footer Row -->
+      <footer class="footer-row">
+        <div class="footer-left">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/>
+          </svg>
+          <span>AI-powered analysis · Updates on each card change</span>
+        </div>
+        <a class="footer-link-history" id="link-history">History ↗</a>
+      </footer>
+    </div>
+
+    <!-- Script Entry Point -->
+    <script type="module" src="/src/readiness-score.js"></script>
+  </body>
+</html>

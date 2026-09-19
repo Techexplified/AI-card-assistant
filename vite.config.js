@@ -12,6 +12,7 @@ export default defineConfig({
         authorized: resolve(__dirname, 'authorized.html'),
         section: resolve(__dirname, 'section.html'),
         missingInfo: resolve(__dirname, 'missing-info.html'),
+        readinessScore: resolve(__dirname, 'readiness-score.html'),
       },
     },
   },
