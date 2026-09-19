@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Missing Info Detector</title>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <style>
+      :root {
+        --color-primary: #5b4fe9;
+        --color-primary-hover: #4d41db;
+        --color-primary-active: #4135c7;
+        --color-red: #dc2626;
+        --color-red-light: #fef2f2;
+        --color-red-border: #fee2e2;
+        --color-orange: #d97706;
+        --color-orange-light: #fffbeb;
+        --color-orange-border: #fef3c7;
+        --color-text-main: #172b4d;
+        --color-text-sub: #64748b;
+        --color-text-muted: #94a3b8;
+        --color-bg-gray: #f4f5f7;
+        --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', Ubuntu, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-family);
+        color: var(--color-text-main);
+        background-color: #ffffff;
+        padding: 16px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      #popup-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        max-width: 580px;
+        margin: 0 auto;
+      }
+
+      /* 1. Header Row */
+      .header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .header-icon-box {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background-color: var(--color-red-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-red);
+        flex-shrink: 0;
+      }
+
+      .header-icon-box svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .header-text {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--color-text-main);
+      }
+
+      .header-subtitle {
+        font-size: 12px;
+        color: var(--color-text-sub);
+      }
+
+      .btn-close {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: none;
+        background-color: var(--color-bg-gray);
+        color: var(--color-text-sub);
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.15s, color 0.15s;
+      }
+
+      .btn-close:hover {
+        background-color: #e2e8f0;
+        color: var(--color-text-main);
+      }
+
+      /* 2. Summary Card */
+      .summary-card {
+        background-color: var(--color-red-light);
+        border: 1px solid var(--color-red-border);
+        border-radius: 12px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .summary-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .summary-metric {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .summary-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--color-red);
+      }
+
+      .summary-values {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-top: 2px;
+      }
+
+      .summary-percentage {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--color-red);
+        line-height: 1;
+      }
+
+      .summary-subtext {
+        font-size: 13px;
+        color: var(--color-text-sub);
+      }
+
+      .summary-pills {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-end;
+      }
+
+      .pill-missing {
+        background-color: var(--color-red);
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 9999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .pill-optional {
+        background-color: var(--color-orange);
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 9999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .progress-bar-track {
+        width: 100%;
+        height: 6px;
+        border-radius: 9999px;
+        background-color: var(--color-red-border);
+        overflow: hidden;
+      }
+
+      .progress-bar-fill {
+        height: 100%;
+        width: 54%;
+        border-radius: 9999px;
+        background-color: var(--color-red);
+        transition: width 0.4s ease;
+      }
+
+      /* 3. Breadcrumb Row */
+      .breadcrumb-row {
+        background-color: var(--color-bg-gray);
+        border-radius: 8px;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--color-text-sub);
+      }
+
+      .breadcrumb-row svg {
+        width: 14px;
+        height: 14px;
+        stroke: var(--color-text-sub);
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .breadcrumb-card-name {
+        font-weight: 600;
+        color: var(--color-text-main);
+      }
+
+      .breadcrumb-link {
+        color: #2563eb;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .breadcrumb-link:hover {
+        text-decoration: underline;
+      }
+
+      /* Section Headers */
+      .section-block {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .section-heading-critical {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.6px;
+        color: var(--color-red);
+        text-transform: uppercase;
+      }
+
+      .section-heading-optional {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.6px;
+        color: var(--color-orange);
+        text-transform: uppercase;
+      }
+
+      /* Item Cards */
+      .items-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .item-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 12px 14px;
+        background-color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+
+      .item-card:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+      }
+
+      .item-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .item-left {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .item-icon-box {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .item-icon-box.critical {
+        background-color: var(--color-red-light);
+        color: var(--color-red);
+      }
+
+      .item-icon-box.optional {
+        background-color: var(--color-orange-light);
+        color: var(--color-orange);
+      }
+
+      .item-icon-box svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .item-title-group {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+
+      .item-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--color-text-main);
+      }
+
+      .item-description {
+        font-size: 12px;
+        color: var(--color-text-sub);
+      }
+
+      .item-badge-pill {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .item-badge-pill.critical {
+        background-color: var(--color-red-border);
+        color: var(--color-red);
+      }
+
+      .item-badge-pill.optional {
+        background-color: var(--color-orange-border);
+        color: var(--color-orange);
+      }
+
+      .item-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding-top: 4px;
+        border-top: 1px solid #f1f5f9;
+      }
+
+      .item-hint {
+        font-size: 11px;
+        color: var(--color-text-muted);
+      }
+
+      .btn-item-action {
+        border: none;
+        border-radius: 6px;
+        padding: 5px 12px;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: background-color 0.15s, opacity 0.15s;
+      }
+
+      .btn-item-action.critical {
+        background-color: var(--color-red-light);
+        color: var(--color-red);
+      }
+
+      .btn-item-action.critical:hover {
+        background-color: var(--color-red-border);
+      }
+
+      .btn-item-action.optional {
+        background-color: var(--color-orange-light);
+        color: var(--color-orange);
+      }
+
+      .btn-item-action.optional:hover {
+        background-color: var(--color-orange-border);
+      }
+
+      /* 6. AI Completion Callout */
+      .ai-callout-card {
+        background: linear-gradient(135deg, #5b4fe9 0%, #4338ca 100%);
+        border-radius: 12px;
+        padding: 16px;
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        box-shadow: 0 4px 12px rgba(91, 79, 233, 0.25);
+      }
+
+      .ai-callout-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .ai-sparkle-box {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .ai-sparkle-box svg {
+        width: 18px;
+        height: 18px;
+        fill: #ffffff;
+      }
+
+      .ai-callout-text {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .ai-callout-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #ffffff;
+      }
+
+      .ai-callout-subtitle {
+        font-size: 12px;
+        color: #e0e7ff;
+        line-height: 1.35;
+      }
+
+      .btn-ai-complete {
+        width: 100%;
+        height: 38px;
+        background-color: #ffffff;
+        color: var(--color-primary);
+        border: none;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.15s, transform 0.1s, color 0.15s;
+      }
+
+      .btn-ai-complete:hover {
+        background-color: #f8fafc;
+        color: #4338ca;
+      }
+
+      .btn-ai-complete:active {
+        transform: scale(0.99);
+      }
+
+      .btn-ai-complete svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="popup-container">
+      <!-- 1. Header Row -->
+      <header class="header-row">
+        <div class="header-left">
+          <div class="header-icon-box">
+            <!-- Search/Magnifying Glass Icon -->
+            <svg viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </div>
+          <div class="header-text">
+            <h1 class="header-title">Missing Info Detector</h1>
+            <span class="header-subtitle">See what's missing and fix it instantly</span>
+          </div>
+        </div>
+        <button class="btn-close" id="btn-close-popup" title="Close" aria-label="Close popup">×</button>
+      </header>
+
+      <!-- 2. Summary Card -->
+      <section class="summary-card">
+        <div class="summary-top">
+          <div class="summary-metric">
+            <span class="summary-label">Card Completeness</span>
+            <div class="summary-values">
+              <span class="summary-percentage" id="summary-percentage">54%</span>
+              <span class="summary-subtext">of fields complete</span>
+            </div>
+          </div>
+          <div class="summary-pills">
+            <span class="pill-missing" id="pill-missing-count">● 4 Missing</span>
+            <span class="pill-optional" id="pill-optional-count">● 2 Optional</span>
+          </div>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-bar-fill" style="width: 54%;"></div>
+        </div>
+      </section>
+
+      <!-- 3. Breadcrumb Row -->
+      <div class="breadcrumb-row">
+        <!-- Grid/Board Icon -->
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span class="breadcrumb-card-name" id="breadcrumb-card-name">Website Redesign</span>
+        <span>· in list</span>
+        <span class="breadcrumb-link" id="breadcrumb-list-name">In Progress</span>
+      </div>
+
+      <!-- 4. Critical Section -->
+      <section class="section-block">
+        <h2 class="section-heading-critical">CRITICAL — FIX THESE FIRST</h2>
+        <div class="items-list" id="critical-items-list">
+          <!-- Dynamically populated from missingInfoData.critical -->
+        </div>
+      </section>
+
+      <!-- 5. Optional Section -->
+      <section class="section-block">
+        <h2 class="section-heading-optional">OPTIONAL — NICE TO HAVE</h2>
+        <div class="items-list" id="optional-items-list">
+          <!-- Dynamically populated from missingInfoData.optional -->
+        </div>
+      </section>
+
+      <!-- 6. AI Completion Callout -->
+      <section class="ai-callout-card">
+        <div class="ai-callout-header">
+          <div class="ai-sparkle-box">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2zM19 16l1.2 3.3L23.5 20.5l-3.3 1.2L19 25l-1.2-3.3-3.3-1.2 3.3-1.2L19 16z"/>
+            </svg>
+          </div>
+          <div class="ai-callout-text">
+            <span class="ai-callout-title">Let AI complete this card</span>
+            <span class="ai-callout-subtitle">AI will auto-fill all missing fields based on card's context and description.</span>
+          </div>
+        </div>
+        <button class="btn-ai-complete" id="btn-ai-complete">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2zM19 16l1.2 3.3L23.5 20.5l-3.3 1.2L19 25l-1.2-3.3-3.3-1.2 3.3-1.2L19 16z"/>
+          </svg>
+          <span>✨ Let AI Complete This Card</span>
+        </button>
+      </section>
+    </div>
+
+    <!-- Script Entry Point -->
+    <script type="module" src="/src/missing-info.js"></script>
+  </body>
+</html>
