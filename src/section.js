@@ -95,30 +95,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnViewDetails = document.getElementById('btn-view-details');
   if (btnViewDetails) {
     btnViewDetails.addEventListener('click', (event) => {
-      if (t && typeof t.popup === 'function') {
+      if (window.self !== window.top && t && typeof t.popup === 'function') {
         return t.popup({
           title: 'Missing Info Detector',
           url: t.signUrl ? t.signUrl('./missing-info.html') : './missing-info.html',
           height: 400,
+          mouseEvent: event,
         });
       } else {
-        console.log('[AI Assistant] View Details clicked -> Missing Info Detector popup');
+        // Fallback when testing directly in a standalone browser tab
+        console.log('[AI Assistant] Opening missing-info.html (standalone preview)');
+        window.location.href = './missing-info.html';
       }
     });
   }
 
   // Wire up Ring Eye Icon click handler
   const ringOverlay = document.getElementById('ring-overlay');
-  const ringWrapper = document.getElementById('ring-wrapper');
   const handleScoreDetails = (event) => {
-    if (t && typeof t.popup === 'function') {
+    if (window.self !== window.top && t && typeof t.popup === 'function') {
       return t.popup({
         title: 'Card Readiness Score',
         url: t.signUrl ? t.signUrl('./readiness-score.html') : './readiness-score.html',
         height: 400,
+        mouseEvent: event,
       });
     } else {
-      console.log('[AI Assistant] Ring clicked -> Card Readiness Score popup');
+      console.log('[AI Assistant] Ring clicked (standalone preview)');
+      window.location.href = './missing-info.html';
     }
   };
 

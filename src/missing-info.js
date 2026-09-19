@@ -179,10 +179,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnClose = document.getElementById('btn-close-popup');
   if (btnClose) {
     btnClose.addEventListener('click', () => {
-      if (t && typeof t.closePopup === 'function') {
+      if (window.self !== window.top && t && typeof t.closePopup === 'function') {
         t.closePopup();
       } else {
-        console.log('[Missing Info Detector] Close popup triggered');
+        console.log('[Missing Info Detector] Close popup triggered (standalone preview)');
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.close();
+        }
       }
     });
   }
