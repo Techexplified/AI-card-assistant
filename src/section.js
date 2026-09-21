@@ -95,11 +95,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnViewDetails = document.getElementById('btn-view-details');
   if (btnViewDetails) {
     btnViewDetails.addEventListener('click', (event) => {
-      if (window.self !== window.top && t && typeof t.popup === 'function') {
+      if (window.self !== window.top && t && typeof t.modal === 'function') {
+        return t.modal({
+          title: 'Missing Info Detector',
+          url: t.signUrl ? t.signUrl('./missing-info.html') : './missing-info.html',
+          height: 650,
+          fullscreen: false,
+          accentColor: '#5b4fe9',
+        });
+      } else if (window.self !== window.top && t && typeof t.popup === 'function') {
         return t.popup({
           title: 'Missing Info Detector',
           url: t.signUrl ? t.signUrl('./missing-info.html') : './missing-info.html',
-          height: 400,
+          height: 520,
           mouseEvent: event,
         });
       } else {
@@ -113,7 +121,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Wire up Ring Eye Icon click handler
   const ringOverlay = document.getElementById('ring-overlay');
   const handleScoreDetails = (event) => {
-    if (window.self !== window.top && t && typeof t.popup === 'function') {
+    if (window.self !== window.top && t && typeof t.modal === 'function') {
+      return t.modal({
+        title: 'Card Readiness Score',
+        url: t.signUrl ? t.signUrl('./readiness-score.html') : './readiness-score.html',
+        height: 680,
+        fullscreen: false,
+        accentColor: '#5b4fe9',
+      });
+    } else if (window.self !== window.top && t && typeof t.popup === 'function') {
       return t.popup({
         title: 'Card Readiness Score',
         url: t.signUrl ? t.signUrl('./readiness-score.html') : './readiness-score.html',

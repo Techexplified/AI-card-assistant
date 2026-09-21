@@ -175,12 +175,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Render initial data
   renderMissingInfo(missingInfoData);
 
-  // Close Popup handler
+  // Close Popup / Modal handler
   const btnClose = document.getElementById('btn-close-popup');
   if (btnClose) {
     btnClose.addEventListener('click', () => {
-      if (window.self !== window.top && t && typeof t.closePopup === 'function') {
-        t.closePopup();
+      if (window.self !== window.top && t) {
+        if (typeof t.closeModal === 'function') {
+          try { t.closeModal(); } catch (e) {}
+        }
+        if (typeof t.closePopup === 'function') {
+          try { t.closePopup(); } catch (e) {}
+        }
       } else {
         console.log('[Missing Info Detector] Close popup triggered (standalone preview)');
         if (window.history.length > 1) {
