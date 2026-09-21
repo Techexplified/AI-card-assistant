@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Improve & Structure Card</title>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <style>
+      :root {
+        --color-primary: #5b4fe9;
+        --color-primary-hover: #4d41db;
+        --color-primary-active: #4135c7;
+        --color-purple-light: #ede9fe;
+        --color-purple-border: #c7d2fe;
+        --color-green: #16a34a;
+        --color-green-light: #f0fdf4;
+        --color-green-border: #bbf7d0;
+        --color-green-text: #15803d;
+        --color-red: #dc2626;
+        --color-red-light: #fef2f2;
+        --color-red-border: #fee2e2;
+        --color-red-text: #b91c1c;
+        --color-text-main: #0f172a;
+        --color-text-sub: #475569;
+        --color-text-muted: #94a3b8;
+        --color-bg-gray: #f8fafc;
+        --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', Ubuntu, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Single clean scrollbar on html */
+      html {
+        width: 100%;
+        height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+      }
+
+      body {
+        font-family: var(--font-family);
+        color: var(--color-text-main);
+        background-color: #ffffff;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100%;
+        overflow-x: hidden;
+        overflow-y: visible;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Custom scrollbar for WebKit */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background-color: #94a3b8;
+      }
+
+      #popup-container {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: 100%;
+        max-width: 780px;
+        margin: 0 auto;
+        padding: 16px 20px 24px 20px;
+        box-sizing: border-box;
+      }
+
+      /* 1. Header Row */
+      .header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .header-icon-box {
+        width: 38px;
+        height: 38px;
+        border-radius: 9px;
+        background-color: var(--color-purple-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-primary);
+        flex-shrink: 0;
+      }
+
+      .header-icon-box svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .header-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .header-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--color-text-main);
+        line-height: 1.3;
+      }
+
+      .header-subtitle {
+        font-size: 12px;
+        color: var(--color-text-sub);
+        line-height: 1.35;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+
+      .pill-improvements-made {
+        background-color: #ecfdf5;
+        border: 1px solid var(--color-green-border);
+        color: var(--color-green-text);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+      }
+
+      .btn-close {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: none;
+        background-color: #f1f5f9;
+        color: var(--color-text-sub);
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: background-color 0.15s, color 0.15s;
+      }
+
+      .btn-close:hover {
+        background-color: #e2e8f0;
+        color: var(--color-text-main);
+      }
+
+      /* 2. Breadcrumb + Toggle Row */
+      .nav-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .breadcrumb-row {
+        background-color: var(--color-bg-gray);
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 7px 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--color-text-sub);
+        flex: 1;
+        min-width: 240px;
+      }
+
+      .breadcrumb-row svg {
+        width: 14px;
+        height: 14px;
+        stroke: var(--color-text-sub);
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
+
+      .breadcrumb-card-name {
+        font-weight: 600;
+        color: var(--color-text-main);
+      }
+
+      .breadcrumb-link {
+        color: #2563eb;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .breadcrumb-link:hover {
+        text-decoration: underline;
+      }
+
+      .view-toggle-container {
+        display: inline-flex;
+        background-color: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 3px;
+        gap: 2px;
+        flex-shrink: 0;
+      }
+
+      .btn-toggle-view {
+        border: none;
+        background: transparent;
+        color: var(--color-text-sub);
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 5px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.15s ease;
+      }
+
+      .btn-toggle-view svg {
+        width: 14px;
+        height: 14px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .btn-toggle-view:hover:not(.active) {
+        color: var(--color-text-main);
+        background-color: #e2e8f0;
+      }
+
+      .btn-toggle-view.active {
+        background-color: var(--color-primary);
+        color: #ffffff;
+        box-shadow: 0 1px 3px rgba(91, 79, 233, 0.3);
+      }
+
+      /* 3. Two-Column Layout */
+      .columns-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        align-items: start;
+        transition: grid-template-columns 0.2s ease;
+      }
+
+      .columns-container.after-only-mode {
+        grid-template-columns: 1fr;
+      }
+
+      .column-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .column-wrapper.hidden {
+        display: none !important;
+      }
+
+      .column-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0 2px;
+      }
+
+      .column-title-group {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .col-dot {
+        font-size: 12px;
+        line-height: 1;
+      }
+
+      .col-dot.gray {
+        color: #94a3b8;
+      }
+
+      .col-dot.purple {
+        color: var(--color-primary);
+      }
+
+      .column-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--color-text-sub);
+      }
+
+      .column-title.purple {
+        color: var(--color-primary);
+      }
+
+      .pill-word-count {
+        background-color: #f1f5f9;
+        color: var(--color-text-sub);
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 9999px;
+      }
+
+      .pill-enhanced {
+        background-color: var(--color-purple-light);
+        color: var(--color-primary);
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 10px;
+        border-radius: 9999px;
+      }
+
+      /* Left Column: Raw description card */
+      .card-box {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px 16px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .raw-desc-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--color-text-muted);
+      }
+
+      .raw-desc-label svg {
+        width: 14px;
+        height: 14px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .raw-desc-text {
+        font-size: 13px;
+        color: #334155;
+        line-height: 1.6;
+        white-space: pre-line;
+      }
+
+      /* Left Column: Issues detected box */
+      .issues-box {
+        background-color: var(--color-red-light);
+        border: 1px solid var(--color-red-border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .issues-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .issues-icon-badge {
+        width: 22px;
+        height: 22px;
+        border-radius: 5px;
+        background-color: #fecaca;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-red);
+        flex-shrink: 0;
+      }
+
+      .issues-icon-badge svg {
+        width: 14px;
+        height: 14px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .issues-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--color-red);
+      }
+
+      .issues-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 0;
+      }
+
+      .issues-list li {
+        position: relative;
+        padding-left: 16px;
+        font-size: 12px;
+        color: var(--color-red-text);
+        line-height: 1.45;
+      }
+
+      .issues-list li::before {
+        content: '●';
+        position: absolute;
+        left: 3px;
+        top: 0px;
+        font-size: 8px;
+        color: var(--color-red);
+      }
+
+      /* Left Column: Current Score card */
+      .score-box-current {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .score-box-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .mini-donut-wrapper {
+        position: relative;
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .mini-donut-svg {
+        width: 38px;
+        height: 38px;
+        transform: rotate(-90deg);
+      }
+
+      .mini-donut-track {
+        fill: transparent;
+        stroke: #f1f5f9;
+        stroke-width: 4;
+      }
+
+      .mini-donut-fill-red {
+        fill: transparent;
+        stroke: var(--color-red);
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-dasharray: 100.53;
+        stroke-dashoffset: 46.24; /* 54% */
+      }
+
+      .mini-donut-fill-green {
+        fill: transparent;
+        stroke: #0d9488;
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-dasharray: 100.53;
+        stroke-dashoffset: 8.04; /* 92% */
+      }
+
+      .mini-donut-text {
+        position: absolute;
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--color-text-main);
+      }
+
+      .score-text-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .score-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--color-text-muted);
+      }
+
+      .score-status-text {
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .score-status-text.red {
+        color: var(--color-red);
+      }
+
+      .score-status-text.green {
+        color: var(--color-green-text);
+      }
+
+      .btn-score-chevron {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text-sub);
+        flex-shrink: 0;
+      }
+
+      .btn-score-chevron svg {
+        width: 14px;
+        height: 14px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      /* Right Column: AI Objective Card */
+      .card-box-objective {
+        background-color: #ffffff;
+        border: 1.5px solid var(--color-purple-border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        box-shadow: 0 1px 3px rgba(91, 79, 233, 0.05);
+      }
+
+      .section-card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .section-header-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+
+      .section-header-title.purple {
+        color: var(--color-primary);
+      }
+
+      .section-header-title.dark {
+        color: var(--color-text-main);
+      }
+
+      .section-header-title.green {
+        color: var(--color-green-text);
+      }
+
+      .section-header-title svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
+
+      .pill-ai-added {
+        background-color: var(--color-purple-light);
+        color: var(--color-primary);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        text-transform: none;
+      }
+
+      .pill-ai-added.green {
+        background-color: #dcfce7;
+        color: var(--color-green-text);
+      }
+
+      .pill-tasks-count {
+        background-color: var(--color-purple-light);
+        color: var(--color-primary);
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 9999px;
+      }
+
+      .objective-text {
+        font-size: 13px;
+        color: #334155;
+        line-height: 1.6;
+      }
+
+      /* Right Column: Key Tasks List */
+      .ai-tasks-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 0;
+      }
+
+      .ai-task-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        font-size: 12.5px;
+        color: #334155;
+        line-height: 1.45;
+      }
+
+      .task-icon-box {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        background-color: var(--color-purple-light);
+        color: var(--color-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .task-icon-box svg {
+        width: 12px;
+        height: 12px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      /* Right Column: Definition of Done List */
+      .ai-dod-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 0;
+      }
+
+      .ai-dod-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        font-size: 12.5px;
+        color: #334155;
+        line-height: 1.45;
+      }
+
+      .dod-icon-box {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background-color: #dcfce7;
+        color: var(--color-green-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .dod-icon-box svg {
+        width: 11px;
+        height: 11px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      /* Right Column: New Score Box */
+      .score-box-new {
+        background-color: #ecfdf5;
+        border: 1px solid var(--color-green-border);
+        border-radius: 10px;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .pill-improvement {
+        background-color: #dcfce7;
+        color: var(--color-green-text);
+        font-size: 12px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+      }
+
+      /* 4. Footer Row */
+      .footer-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #f1f5f9;
+        flex-wrap: wrap;
+      }
+
+      .btn-secondary {
+        border: 1px solid #e2e8f0;
+        background-color: #f8fafc;
+        color: #334155;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 8px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: background-color 0.15s, border-color 0.15s;
+      }
+
+      .btn-secondary:hover {
+        background-color: #e2e8f0;
+        border-color: #cbd5e1;
+      }
+
+      .footer-disclaimer {
+        font-size: 11px;
+        color: var(--color-text-muted);
+        text-align: center;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .footer-actions-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-cancel {
+        border: 1px solid #e2e8f0;
+        background-color: #ffffff;
+        color: var(--color-text-sub);
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.15s;
+      }
+
+      .btn-cancel:hover {
+        background-color: #f8fafc;
+        color: var(--color-text-main);
+      }
+
+      .btn-save-main {
+        border: none;
+        background-color: var(--color-primary);
+        color: #ffffff;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        box-shadow: 0 2px 4px rgba(91, 79, 233, 0.2);
+        transition: background-color 0.15s, transform 0.1s;
+      }
+
+      .btn-save-main:hover {
+        background-color: var(--color-primary-hover);
+      }
+
+      .btn-save-main:active {
+        transform: scale(0.99);
+      }
+
+      .btn-save-main svg {
+        width: 15px;
+        height: 15px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="popup-container">
+      <!-- 1. Header Row -->
+      <header class="header-row">
+        <div class="header-left">
+          <div class="header-icon-box">
+            <!-- Sparkles / AI Icon -->
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2zM19 16l1.2 3.3L23.5 20.5l-3.3 1.2L19 25l-1.2-3.3-3.3-1.2 3.3-1.2L19 16z"></path>
+            </svg>
+          </div>
+          <div class="header-text">
+            <h1 class="header-title">Improve & Structure Card</h1>
+            <span class="header-subtitle">AI rewrites your card for clarity and execution</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <span class="pill-improvements-made">✨ 8 improvements made</span>
+          <button class="btn-close" id="btn-close-popup" title="Close" aria-label="Close popup">×</button>
+        </div>
+      </header>
+
+      <!-- 2. Breadcrumb + Toggle Row -->
+      <div class="nav-row">
+        <div class="breadcrumb-row">
+          <!-- Grid/Board Icon -->
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span class="breadcrumb-card-name" id="breadcrumb-card-name">Website Redesign</span>
+          <span>· in list</span>
+          <span class="breadcrumb-link" id="breadcrumb-list-name">In Progress</span>
+        </div>
+
+        <div class="view-toggle-container">
+          <button class="btn-toggle-view active" id="btn-toggle-side" title="Show Original and AI Improved side-by-side">
+            <!-- Columns / Split Icon -->
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="12" y1="3" x2="12" y2="21"></line>
+            </svg>
+            <span>Side by Side</span>
+          </button>
+          <button class="btn-toggle-view" id="btn-toggle-after" title="Show only AI Improved content">
+            <!-- Eye / Preview Icon -->
+            <svg viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span>After Only</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. Two-Column Layout -->
+      <main class="columns-container" id="columns-container">
+        <!-- Left Column: Original -->
+        <div class="column-wrapper" id="col-original">
+          <div class="column-header">
+            <div class="column-title-group">
+              <span class="col-dot gray">●</span>
+              <span class="column-title">Original</span>
+            </div>
+            <span class="pill-word-count" id="original-word-count-pill">0 words</span>
+          </div>
+
+          <!-- RAW CARD DESCRIPTION -->
+          <div class="card-box">
+            <div class="raw-desc-label">
+              <svg viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span>RAW CARD DESCRIPTION</span>
+            </div>
+            <p class="raw-desc-text" id="raw-card-description">Loading description...</p>
+          </div>
+
+          <!-- Issues Detected Box -->
+          <div class="issues-box">
+            <div class="issues-header">
+              <div class="issues-icon-badge">
+                <svg viewBox="0 0 24 24">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+              </div>
+              <span class="issues-title" id="issues-detected-title">4 issues detected</span>
+            </div>
+            <ul class="issues-list" id="issues-detected-list">
+              <!-- Populated dynamically -->
+            </ul>
+          </div>
+
+          <!-- Current Score Box -->
+          <div class="score-box-current">
+            <div class="score-box-left">
+              <div class="mini-donut-wrapper">
+                <svg class="mini-donut-svg" viewBox="0 0 38 38">
+                  <circle class="mini-donut-track" cx="19" cy="19" r="16"></circle>
+                  <circle class="mini-donut-fill-red" cx="19" cy="19" r="16"></circle>
+                </svg>
+                <span class="mini-donut-text" id="current-score-donut-text">54%</span>
+              </div>
+              <div class="score-text-group">
+                <span class="score-label">Current Score</span>
+                <span class="score-status-text red" id="current-score-status-text">Needs Work</span>
+              </div>
+            </div>
+            <div class="btn-score-chevron">
+              <svg viewBox="0 0 24 24">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: AI Improved -->
+        <div class="column-wrapper" id="col-improved">
+          <div class="column-header">
+            <div class="column-title-group">
+              <span class="col-dot purple">●</span>
+              <span class="column-title purple">AI Improved</span>
+            </div>
+            <span class="pill-enhanced">✨ Structured & Enhanced</span>
+          </div>
+
+          <!-- 1. OBJECTIVE Box -->
+          <div class="card-box-objective">
+            <div class="section-card-top">
+              <div class="section-header-title purple">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <circle cx="12" cy="12" r="6"></circle>
+                  <circle cx="12" cy="12" r="2"></circle>
+                </svg>
+                <span>OBJECTIVE</span>
+              </div>
+              <span class="pill-ai-added">AI Added</span>
+            </div>
+            <p class="objective-text" id="ai-objective-text">Loading objective...</p>
+          </div>
+
+          <!-- 2. KEY TASKS Box -->
+          <div class="card-box">
+            <div class="section-card-top">
+              <div class="section-header-title dark">
+                <svg viewBox="0 0 24 24">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                <span>KEY TASKS</span>
+              </div>
+              <span class="pill-tasks-count" id="key-tasks-count-pill">5 tasks</span>
+            </div>
+            <ul class="ai-tasks-list" id="ai-key-tasks-list">
+              <!-- Populated dynamically -->
+            </ul>
+          </div>
+
+          <!-- 3. DEFINITION OF DONE Box -->
+          <div class="card-box">
+            <div class="section-card-top">
+              <div class="section-header-title green">
+                <svg viewBox="0 0 24 24">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <span>DEFINITION OF DONE</span>
+              </div>
+              <span class="pill-ai-added green">AI Added</span>
+            </div>
+            <ul class="ai-dod-list" id="ai-dod-list">
+              <!-- Populated dynamically -->
+            </ul>
+          </div>
+
+          <!-- 4. New Score Box -->
+          <div class="score-box-new">
+            <div class="score-box-left">
+              <div class="mini-donut-wrapper">
+                <svg class="mini-donut-svg" viewBox="0 0 38 38">
+                  <circle class="mini-donut-track" cx="19" cy="19" r="16"></circle>
+                  <circle class="mini-donut-fill-green" id="new-score-donut-fill" cx="19" cy="19" r="16"></circle>
+                </svg>
+                <span class="mini-donut-text" id="new-score-donut-text">92%</span>
+              </div>
+              <div class="score-text-group">
+                <span class="score-label">New Score</span>
+                <span class="score-status-text green" id="new-score-status-text">Ready to Execute</span>
+              </div>
+            </div>
+            <span class="pill-improvement" id="new-score-improvement-pill">↗ +38% improvement</span>
+          </div>
+        </div>
+      </main>
+
+      <!-- 4. Footer Row -->
+      <footer class="footer-row">
+        <button class="btn-secondary" id="btn-regenerate">
+          <span>🔄 Regenerate</span>
+        </button>
+        <span class="footer-disclaimer">✨ AI may make mistakes · Review before applying</span>
+        <div class="footer-actions-right">
+          <button class="btn-cancel" id="btn-cancel">Cancel</button>
+          <button class="btn-save-main" id="btn-save-checklist">
+            <svg viewBox="0 0 24 24">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Save &amp; Generate Checklist</span>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Script Entry Point -->
+    <script type="module" src="/src/improve-card.js"></script>
+  </body>
+</html>

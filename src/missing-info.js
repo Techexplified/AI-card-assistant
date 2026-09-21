@@ -200,9 +200,27 @@ document.addEventListener('DOMContentLoaded', () => {
   // "Let AI Complete This Card" button handler
   const btnAiComplete = document.getElementById('btn-ai-complete');
   if (btnAiComplete) {
-    btnAiComplete.addEventListener('click', () => {
-      // TODO: wire to real Trello REST API write-back (requires OAuth token) once backend is built
-      console.log('action triggered: ai-auto-complete');
+    btnAiComplete.addEventListener('click', (event) => {
+      if (window.self !== window.top && t && typeof t.popup === 'function') {
+        return t.popup({
+          title: 'Improve & Structure Card',
+          url: t.signUrl ? t.signUrl('./improve-card.html') : './improve-card.html',
+          height: 600,
+          mouseEvent: event,
+        });
+      } else if (window.self !== window.top && t && typeof t.modal === 'function') {
+        return t.modal({
+          title: 'Improve & Structure Card',
+          url: t.signUrl ? t.signUrl('./improve-card.html') : './improve-card.html',
+          height: 600,
+          fullscreen: false,
+          accentColor: '#5b4fe9',
+        });
+      } else {
+        // Fallback for direct browser standalone testing
+        console.log('[Missing Info Detector] Opening improve-card.html (standalone preview)');
+        window.location.href = './improve-card.html';
+      }
     });
   }
 

@@ -13,6 +13,7 @@ export default defineConfig({
         section: resolve(__dirname, 'section.html'),
         missingInfo: resolve(__dirname, 'missing-info.html'),
         readinessScore: resolve(__dirname, 'readiness-score.html'),
+        improveCard: resolve(__dirname, 'improve-card.html'),
       },
     },
   },
