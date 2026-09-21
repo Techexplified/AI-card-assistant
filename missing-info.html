@@ -29,20 +29,53 @@
         padding: 0;
       }
 
+      /* Single clean scrollbar on html */
+      html {
+        width: 100%;
+        height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+      }
+
       body {
         font-family: var(--font-family);
         color: var(--color-text-main);
         background-color: #ffffff;
-        padding: 16px;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100%;
+        overflow-x: hidden;
+        overflow-y: visible;
         -webkit-font-smoothing: antialiased;
+      }
+
+      /* Custom scrollbar for WebKit */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background-color: #94a3b8;
       }
 
       #popup-container {
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 14px;
+        width: 100%;
         max-width: 580px;
         margin: 0 auto;
+        padding: 14px 16px 18px 16px;
+        box-sizing: border-box;
       }
 
       /* 1. Header Row */

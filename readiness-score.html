@@ -12,16 +12,19 @@
         --color-green: #16a34a;
         --color-green-light: #f0fdf4;
         --color-green-border: #bbf7d0;
+        --color-green-text: #15803d;
         --color-orange: #d97706;
         --color-orange-light: #fffbeb;
         --color-orange-border: #fde68a;
+        --color-orange-text: #b45309;
         --color-red: #dc2626;
         --color-red-light: #fef2f2;
         --color-red-border: #fecaca;
-        --color-text-main: #172b4d;
-        --color-text-sub: #64748b;
-        --color-text-muted: #8c9bab;
-        --color-bg-gray: #f4f5f7;
+        --color-red-text: #b91c1c;
+        --color-text-main: #0f172a;
+        --color-text-sub: #475569;
+        --color-text-muted: #64748b;
+        --color-bg-gray: #f8fafc;
         --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', Ubuntu, sans-serif;
       }
 
@@ -31,20 +34,53 @@
         padding: 0;
       }
 
+      /* Single clean scrollbar on html */
+      html {
+        width: 100%;
+        height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+      }
+
       body {
         font-family: var(--font-family);
         color: var(--color-text-main);
         background-color: #ffffff;
-        padding: 16px;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100%;
+        overflow-x: hidden;
+        overflow-y: visible;
         -webkit-font-smoothing: antialiased;
+      }
+
+      /* Custom scrollbar for WebKit */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background-color: #94a3b8;
       }
 
       #popup-container {
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 14px;
+        width: 100%;
         max-width: 580px;
         margin: 0 auto;
+        padding: 14px 16px 18px 16px;
+        box-sizing: border-box;
       }
 
       /* 1. Header Row */
@@ -52,13 +88,14 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
+        gap: 10px;
       }
 
       .header-left {
         display: flex;
         align-items: center;
         gap: 10px;
+        min-width: 0;
       }
 
       .header-icon-box {
@@ -86,17 +123,26 @@
       .header-text {
         display: flex;
         flex-direction: column;
+        min-width: 0;
       }
 
       .header-title {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 700;
         color: var(--color-text-main);
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .header-subtitle {
         font-size: 12px;
         color: var(--color-text-sub);
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .btn-close {
@@ -112,6 +158,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
         transition: background-color 0.15s, color 0.15s;
       }
 
@@ -123,8 +170,9 @@
       /* 2. Breadcrumb Row */
       .breadcrumb-row {
         background-color: var(--color-bg-gray);
+        border: 1px solid #e2e8f0;
         border-radius: 8px;
-        padding: 8px 12px;
+        padding: 7px 10px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -137,7 +185,9 @@
       .breadcrumb-left {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
+        min-width: 0;
+        flex-shrink: 1;
       }
 
       .breadcrumb-left svg {
@@ -148,17 +198,22 @@
         stroke-width: 2;
         stroke-linecap: round;
         stroke-linejoin: round;
+        flex-shrink: 0;
       }
 
       .breadcrumb-card-name {
         font-weight: 600;
         color: var(--color-text-main);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .breadcrumb-link {
         color: #2563eb;
         font-weight: 600;
         text-decoration: none;
+        white-space: nowrap;
       }
 
       .breadcrumb-right {
@@ -167,6 +222,7 @@
         gap: 4px;
         font-size: 11px;
         color: var(--color-text-muted);
+        flex-shrink: 0;
       }
 
       .breadcrumb-right svg {
@@ -177,48 +233,53 @@
         stroke-width: 2;
       }
 
-      /* 3. Score Section (Two Columns) */
+      /* 3. Score Section (Hero Card with Clean Two-Column Flex) */
       .score-section {
         display: flex;
         align-items: center;
-        justify-content: space-around;
-        gap: 20px;
-        padding: 8px 10px;
+        gap: 16px;
+        padding: 14px;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        box-sizing: border-box;
       }
 
       /* Donut Ring */
       .donut-wrapper {
         position: relative;
-        width: 106px;
-        height: 106px;
-        min-width: 106px;
-        min-height: 106px;
+        width: 88px;
+        height: 88px;
+        min-width: 88px;
+        min-height: 88px;
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
       }
 
       .donut-svg {
-        width: 106px;
-        height: 106px;
+        width: 88px;
+        height: 88px;
         transform: rotate(-90deg);
         transform-origin: 50% 50%;
       }
 
       .donut-arc-magenta {
         fill: transparent;
-        stroke: #f43f5e;
-        stroke-width: 12;
+        stroke: #f1f5f9;
+        stroke-width: 10;
       }
 
       .donut-arc-blue {
         fill: transparent;
         stroke: #4f46e5;
-        stroke-width: 12;
+        stroke-width: 10;
         stroke-linecap: round;
-        stroke-dasharray: 263.89;
-        stroke-dashoffset: 121.39; /* 54% */
-        transition: stroke-dashoffset 0.4s ease;
+        stroke-dasharray: 238.76;
+        stroke-dashoffset: 109.83; /* 54% */
+        transition: stroke-dashoffset 0.4s ease, stroke 0.3s ease;
       }
 
       .donut-center-text {
@@ -231,52 +292,81 @@
       }
 
       .donut-score-value {
-        font-size: 24px;
+        font-size: 21px;
         font-weight: 800;
         line-height: 1.1;
         color: var(--color-text-main);
       }
 
       .donut-score-label {
-        font-size: 11px;
-        font-weight: 500;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
         color: var(--color-text-muted);
+        margin-top: 1px;
       }
 
       /* Status & Legend */
       .score-meta {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        min-width: 180px;
+        gap: 6px;
+        flex: 1;
+        min-width: 0;
       }
 
       .status-meta-header {
-        font-size: 10px;
-        font-weight: 800;
+        font-size: 11px;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.6px;
-        color: var(--color-text-muted);
+        color: var(--color-text-sub);
+        display: block;
+        line-height: 1.2;
       }
 
       .current-status-pill {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background-color: var(--color-red-light);
-        border: 1px solid var(--color-red-border);
-        color: var(--color-red);
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
-        padding: 4px 12px;
+        padding: 4px 10px;
         border-radius: 9999px;
         width: fit-content;
+        max-width: 100%;
+        line-height: 1.2;
+        transition: all 0.2s ease;
+      }
+
+      .current-status-pill.needs-work {
+        background-color: var(--color-red-light);
+        border: 1px solid var(--color-red-border);
+        color: var(--color-red-text);
+      }
+
+      .current-status-pill.almost-ready {
+        background-color: var(--color-orange-light);
+        border: 1px solid var(--color-orange-border);
+        color: var(--color-orange-text);
+      }
+
+      .current-status-pill.ready {
+        background-color: var(--color-green-light);
+        border: 1px solid var(--color-green-border);
+        color: var(--color-green-text);
+      }
+
+      .current-status-pill .status-dot {
+        font-size: 10px;
+        line-height: 1;
       }
 
       .legend-list {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 3px;
         margin-top: 2px;
       }
 
@@ -284,8 +374,11 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        font-size: 12px;
-        color: var(--color-text-main);
+        font-size: 11px;
+        color: var(--color-text-sub);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .legend-dot {
@@ -310,15 +403,14 @@
       .btn-rescan {
         display: inline-flex;
         align-items: center;
-        gap: 5px;
+        gap: 4px;
         color: #2563eb;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
         background: none;
         border: none;
         cursor: pointer;
-        padding: 0;
-        margin-top: 3px;
+        padding: 2px 0 0 0;
         transition: color 0.15s;
         width: fit-content;
       }
@@ -343,13 +435,17 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 5px;
-        padding: 7px 8px;
-        border-radius: 8px;
-        font-size: 12px;
+        gap: 4px;
+        padding: 6px 4px;
+        border-radius: 6px;
+        font-size: 11px;
         font-weight: 600;
         transition: all 0.2s ease;
         opacity: 0.55;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        border: 1px solid transparent;
       }
 
       .scale-segment.active {
@@ -360,20 +456,20 @@
 
       .scale-segment.needs-work {
         background-color: var(--color-red-light);
-        color: var(--color-red);
-        border: 1px solid var(--color-red-border);
+        color: var(--color-red-text);
+        border-color: var(--color-red-border);
       }
 
       .scale-segment.almost-ready {
         background-color: var(--color-orange-light);
-        color: var(--color-orange);
-        border: 1px solid var(--color-orange-border);
+        color: var(--color-orange-text);
+        border-color: var(--color-orange-border);
       }
 
       .scale-segment.ready {
         background-color: var(--color-green-light);
-        color: var(--color-green);
-        border: 1px solid var(--color-green-border);
+        color: var(--color-green-text);
+        border-color: var(--color-green-border);
       }
 
       /* 5. Category Breakdown Section */
@@ -384,26 +480,28 @@
       }
 
       .breakdown-heading {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
         color: var(--color-text-main);
       }
 
       .category-list {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
       }
 
       .category-card {
         border-radius: 10px;
-        padding: 12px 14px;
+        padding: 10px 12px;
         background-color: #ffffff;
         display: flex;
         flex-direction: column;
-        gap: 9px;
+        gap: 8px;
         border: 1px solid #e2e8f0;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
       }
 
       .category-card.passing {
@@ -425,18 +523,20 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 10px;
+        gap: 8px;
       }
 
       .category-left {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
+        min-width: 0;
+        flex: 1;
       }
 
       .category-icon-box {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
         border-radius: 6px;
         display: flex;
         align-items: center;
@@ -460,8 +560,8 @@
       }
 
       .category-icon-box svg {
-        width: 16px;
-        height: 16px;
+        width: 15px;
+        height: 15px;
         stroke: currentColor;
         fill: none;
         stroke-width: 2;
@@ -472,16 +572,23 @@
       .category-title-group {
         display: flex;
         flex-direction: column;
+        min-width: 0;
       }
 
       .category-title {
         font-size: 13px;
         font-weight: 700;
         color: var(--color-text-main);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .category-desc {
-        font-size: 12px;
+        font-size: 11px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .category-desc.passing {
@@ -499,23 +606,24 @@
       .category-right {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        flex-shrink: 0;
       }
 
       .category-score-text {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
         color: var(--color-text-main);
       }
 
       .category-badge-circle {
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 800;
         flex-shrink: 0;
       }
@@ -537,7 +645,7 @@
 
       .category-bar-track {
         width: 100%;
-        height: 6px;
+        height: 5px;
         border-radius: 9999px;
         background-color: #f1f5f9;
         overflow: hidden;
@@ -566,16 +674,18 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding-top: 10px;
+        padding-top: 8px;
         border-top: 1px solid #f1f5f9;
         font-size: 11px;
         color: var(--color-text-sub);
+        gap: 6px;
       }
 
       .footer-left {
         display: flex;
         align-items: center;
         gap: 5px;
+        min-width: 0;
       }
 
       .footer-left svg {
@@ -584,6 +694,13 @@
         stroke: var(--color-primary);
         fill: none;
         stroke-width: 2;
+        flex-shrink: 0;
+      }
+
+      .footer-left span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .footer-link-history {
@@ -594,6 +711,7 @@
         display: inline-flex;
         align-items: center;
         gap: 2px;
+        flex-shrink: 0;
       }
 
       .footer-link-history:hover {
@@ -650,8 +768,8 @@
         <!-- Left: Donut Ring -->
         <div class="donut-wrapper">
           <svg class="donut-svg" viewBox="0 0 100 100">
-            <circle class="donut-arc-magenta" cx="50" cy="50" r="42"></circle>
-            <circle class="donut-arc-blue" id="donut-progress-circle" cx="50" cy="50" r="42"></circle>
+            <circle class="donut-arc-magenta" cx="50" cy="50" r="38"></circle>
+            <circle class="donut-arc-blue" id="donut-progress-circle" cx="50" cy="50" r="38"></circle>
           </svg>
           <div class="donut-center-text">
             <span class="donut-score-value" id="donut-score-value">54%</span>
@@ -662,7 +780,7 @@
         <!-- Right: Current Status & Counts -->
         <div class="score-meta">
           <span class="status-meta-header">CURRENT STATUS</span>
-          <div class="current-status-pill" id="current-status-pill">
+          <div class="current-status-pill needs-work" id="current-status-pill">
             <span class="status-dot">●</span>
             <span id="current-status-text">Needs Work</span>
           </div>

@@ -117,12 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return t.popup({
         title: 'Card Readiness Score',
         url: t.signUrl ? t.signUrl('./readiness-score.html') : './readiness-score.html',
-        height: 400,
+        height: 520,
         mouseEvent: event,
       });
     } else {
       console.log('[AI Assistant] Ring clicked (standalone preview)');
-      window.location.href = './missing-info.html';
+      window.location.href = './readiness-score.html';
     }
   };
 
@@ -130,8 +130,15 @@ document.addEventListener('DOMContentLoaded', () => {
     ringOverlay.addEventListener('click', handleScoreDetails);
   }
 
+  // Also allow clicking the whole ring wrapper
+  const ringWrapper = document.getElementById('ring-wrapper');
+  if (ringWrapper) {
+    ringWrapper.addEventListener('click', handleScoreDetails);
+  }
+
   // Auto size iframe to content in Trello if supported
   if (t && typeof t.sizeTo === 'function') {
-    t.sizeTo('#section-container');
+    const container = document.getElementById('section-container') || document.body;
+    t.sizeTo(container);
   }
 });

@@ -203,6 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Auto size popup iframe to content if supported
   if (t && typeof t.sizeTo === 'function') {
-    t.sizeTo('#popup-container');
+    const container = document.getElementById('popup-container') || document.body;
+    t.sizeTo(container);
   }
 });

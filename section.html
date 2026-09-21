@@ -12,9 +12,9 @@
         --color-primary-active: #4135c7;
         --color-status-orange: #ea580c;
         --color-status-orange-light: #fde8e8;
-        --color-text-main: #172b4d;
-        --color-text-sub: #64748b;
-        --color-text-muted: #8c9bab;
+        --color-text-main: #0f172a;
+        --color-text-sub: #475569;
+        --color-text-muted: #64748b;
         --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', Ubuntu, sans-serif;
       }
 
@@ -24,19 +24,24 @@
         padding: 0;
       }
 
-      body {
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* No scrollbars on card back section */
+        width: 100%;
         font-family: var(--font-family);
         color: var(--color-text-main);
         background-color: transparent;
-        padding: 10px 12px;
         -webkit-font-smoothing: antialiased;
       }
 
       #section-container {
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
         width: 100%;
+        padding: 8px 10px 10px 10px;
+        box-sizing: border-box;
       }
 
       /* Middle Content: Ring & Info */
@@ -49,19 +54,20 @@
       /* Circular Progress Ring */
       .ring-wrapper {
         position: relative;
-        width: 76px;
-        height: 76px;
-        min-width: 76px;
-        min-height: 76px;
+        width: 72px;
+        height: 72px;
+        min-width: 72px;
+        min-height: 72px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        flex-shrink: 0;
       }
 
       .progress-svg {
-        width: 76px;
-        height: 76px;
+        width: 72px;
+        height: 72px;
         transform: rotate(-90deg);
         transform-origin: 50% 50%;
       }
@@ -94,14 +100,16 @@
 
       .score-value {
         font-size: 17px;
-        font-weight: 700;
+        font-weight: 800;
         line-height: 1.1;
         color: var(--color-status-orange);
       }
 
       .score-label {
-        font-size: 11px;
-        font-weight: 500;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
         color: var(--color-text-muted);
         margin-top: 1px;
       }
@@ -111,7 +119,7 @@
         position: absolute;
         inset: 0;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.88);
+        background: rgba(255, 255, 255, 0.9);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -125,8 +133,8 @@
       }
 
       .ring-overlay svg {
-        width: 22px;
-        height: 22px;
+        width: 20px;
+        height: 20px;
         stroke: var(--color-primary);
         fill: none;
         stroke-width: 2;
@@ -140,12 +148,23 @@
         flex-direction: column;
         justify-content: center;
         gap: 3px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .status-meta-header {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--color-text-muted);
+        line-height: 1.2;
       }
 
       .status-header {
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 6px;
       }
 
       .status-dot {
@@ -160,24 +179,28 @@
         font-size: 15px;
         font-weight: 700;
         color: var(--color-status-orange);
+        line-height: 1.2;
       }
 
       .status-description {
-        font-size: 13px;
+        font-size: 12px;
         line-height: 1.35;
         color: var(--color-text-sub);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       /* Primary Button */
       .btn-view-details {
         width: 100%;
-        height: 38px;
+        height: 36px;
         background-color: var(--color-primary);
         color: #ffffff;
         border: none;
         border-radius: 8px;
         font-family: inherit;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
         display: flex;
         align-items: center;
@@ -199,8 +222,8 @@
       }
 
       .btn-view-details svg {
-        width: 16px;
-        height: 16px;
+        width: 15px;
+        height: 15px;
         fill: currentColor;
         flex-shrink: 0;
       }
@@ -234,6 +257,7 @@
 
         <!-- Status & Description -->
         <div class="status-info">
+          <span class="status-meta-header">CURRENT STATUS</span>
           <div class="status-header">
             <span class="status-dot" id="status-dot"></span>
             <span class="status-title" id="status-title">Needs Work</span>

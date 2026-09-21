@@ -144,9 +144,9 @@ function renderReadinessScore(data) {
     analyzedAtEl.textContent = `Analyzed ${data.analyzedAt || 'just now'}`;
   }
 
-  // 2. Donut Ring Progress
-  const radius = 42;
-  const circumference = 2 * Math.PI * radius; // ~263.89
+  // 2. Donut Ring Progress (radius 38 matches SVG cx=50, cy=50, r=38)
+  const radius = 38;
+  const circumference = 2 * Math.PI * radius; // ~238.76
   const offset = circumference - (score / 100) * circumference;
 
   const donutProgress = document.getElementById('donut-progress-circle');
@@ -155,6 +155,13 @@ function renderReadinessScore(data) {
   if (donutProgress) {
     donutProgress.style.strokeDasharray = `${circumference}`;
     donutProgress.style.strokeDashoffset = `${offset}`;
+    if (score >= 80) {
+      donutProgress.style.stroke = '#16a34a';
+    } else if (score >= 60) {
+      donutProgress.style.stroke = '#d97706';
+    } else {
+      donutProgress.style.stroke = '#4f46e5';
+    }
   }
   if (donutScoreValue) {
     donutScoreValue.textContent = `${score}%`;
@@ -168,6 +175,19 @@ function renderReadinessScore(data) {
   const legendMissing = document.getElementById('legend-missing-text');
 
   if (currentStatusText) currentStatusText.textContent = data.status;
+
+  if (currentStatusPill) {
+    currentStatusPill.className = 'current-status-pill';
+    const statusNormalized = (data.status || '').toLowerCase().replace(/\s+/g, '-');
+    if (statusNormalized === 'ready') {
+      currentStatusPill.classList.add('ready');
+    } else if (statusNormalized === 'almost-ready') {
+      currentStatusPill.classList.add('almost-ready');
+    } else {
+      currentStatusPill.classList.add('needs-work');
+    }
+  }
+
   if (legendPassing) legendPassing.textContent = `${data.passingCount} categories passing`;
   if (legendPartial) legendPartial.textContent = `${data.partialCount} category partial`;
   if (legendMissing) legendMissing.textContent = `${data.missingCount} categories missing`;
@@ -190,6 +210,12 @@ function renderReadinessScore(data) {
     (data.categories || []).forEach((cat) => {
       categoryList.appendChild(createCategoryCard(cat));
     });
+  }
+
+  // Adjust popup size cleanly after render
+  if (t && typeof t.sizeTo === 'function') {
+    const container = document.getElementById('popup-container') || document.body;
+    t.sizeTo(container);
   }
 }
 
@@ -236,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Auto size popup iframe to content if supported
   if (t && typeof t.sizeTo === 'function') {
-    t.sizeTo('#popup-container');
+    const container = document.getElementById('popup-container') || document.body;
+    t.sizeTo(container);
   }
 });
