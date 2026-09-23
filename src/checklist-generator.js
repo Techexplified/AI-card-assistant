@@ -478,13 +478,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 5. Save Checklist Button handler
+  // 5. Save & Get Next Steps Button handler
   const btnSaveChecklist = document.getElementById('btn-save-checklist');
   if (btnSaveChecklist) {
-    btnSaveChecklist.addEventListener('click', () => {
+    btnSaveChecklist.addEventListener('click', (event) => {
       // TODO: write checklist to the actual Trello card via REST API (create checklist + items per category, or flatten into one checklist) — requires OAuth token
       console.log('save checklist triggered', checklistData);
-      closePopupAction();
+      const targetUrl = (t && typeof t.signUrl === 'function')
+        ? t.signUrl('./next-steps.html')
+        : './next-steps.html';
+
+      if (window.self !== window.top && t && typeof t.popup === 'function') {
+        try {
+          t.popup({
+            title: 'Suggested Next Steps',
+            url: targetUrl,
+            height: 600,
+            mouseEvent: event,
+          });
+        } catch (err) {
+          console.warn('[Checklist Generator] t.popup failed, falling back to direct navigation:', err);
+          window.location.href = './next-steps.html';
+        }
+      } else {
+        // Fallback when viewing standalone in a browser tab
+        console.log('[Checklist Generator] Opening next-steps.html (standalone preview)');
+        window.location.href = './next-steps.html';
+      }
     });
   }
 

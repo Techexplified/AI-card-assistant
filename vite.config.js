@@ -15,6 +15,7 @@ export default defineConfig({
         readinessScore: resolve(__dirname, 'readiness-score.html'),
         improveCard: resolve(__dirname, 'improve-card.html'),
         checklistGenerator: resolve(__dirname, 'checklist-generator.html'),
+        nextSteps: resolve(__dirname, 'next-steps.html'),
       },
     },
   },
