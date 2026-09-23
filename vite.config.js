@@ -14,6 +14,7 @@ export default defineConfig({
         missingInfo: resolve(__dirname, 'missing-info.html'),
         readinessScore: resolve(__dirname, 'readiness-score.html'),
         improveCard: resolve(__dirname, 'improve-card.html'),
+        checklistGenerator: resolve(__dirname, 'checklist-generator.html'),
       },
     },
   },

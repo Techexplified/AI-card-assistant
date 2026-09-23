@@ -268,6 +268,15 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSaveChecklist.addEventListener('click', () => {
       // TODO: write improved description back to card via Trello REST API, and create a real Trello checklist from keyTasks — requires OAuth token
       console.log('save triggered', aiImprovementData);
+      if (t && typeof t.popup === 'function') {
+        t.popup({
+          title: 'Smart Checklist Generator',
+          url: t.signUrl ? t.signUrl('./checklist-generator.html') : './checklist-generator.html',
+          height: 600,
+        });
+      } else {
+        window.location.href = './checklist-generator.html';
+      }
     });
   }
 

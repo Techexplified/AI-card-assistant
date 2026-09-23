@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Checklist Generator</title>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <style>
+      :root {
+        --color-primary: #5b4fe9;
+        --color-primary-hover: #4d41db;
+        --color-primary-active: #4135c7;
+        --color-purple-light: #ede9fe;
+        --color-purple-border: #c7d2fe;
+        --color-green: #16a34a;
+        --color-green-light: #f0fdf4;
+        --color-green-border: #bbf7d0;
+        --color-green-text: #15803d;
+        --color-orange: #d97706;
+        --color-orange-light: #fffbeb;
+        --color-orange-border: #fed7aa;
+        --color-orange-text: #b45309;
+        --color-text-main: #0f172a;
+        --color-text-sub: #475569;
+        --color-text-muted: #64748b;
+        --color-bg-gray: #f8fafc;
+        --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', Ubuntu, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Single clean scrollbar on html */
+      html {
+        width: 100%;
+        height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+      }
+
+      body {
+        font-family: var(--font-family);
+        color: var(--color-text-main);
+        background-color: #ffffff;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100%;
+        overflow-x: hidden;
+        overflow-y: visible;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Custom scrollbar for WebKit */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background-color: #94a3b8;
+      }
+
+      #popup-container {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: 100%;
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 16px 20px 24px 20px;
+        box-sizing: border-box;
+      }
+
+      /* 1. Header Row */
+      .header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .header-icon-box {
+        width: 38px;
+        height: 38px;
+        border-radius: 9px;
+        background-color: var(--color-purple-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-primary);
+        flex-shrink: 0;
+      }
+
+      .header-icon-box svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .header-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .header-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--color-text-main);
+        line-height: 1.3;
+      }
+
+      .header-subtitle {
+        font-size: 12px;
+        color: var(--color-text-muted);
+        line-height: 1.35;
+      }
+
+      .btn-close {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: none;
+        background-color: #f1f5f9;
+        color: var(--color-text-sub);
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: background-color 0.15s, color 0.15s;
+      }
+
+      .btn-close:hover {
+        background-color: #e2e8f0;
+        color: var(--color-text-main);
+      }
+
+      /* 2. Breadcrumb + Count Row */
+      .breadcrumb-row {
+        background-color: var(--color-bg-gray);
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 7px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .breadcrumb-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--color-text-sub);
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .breadcrumb-left svg {
+        width: 15px;
+        height: 15px;
+        stroke: var(--color-primary);
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
+
+      .breadcrumb-card-name {
+        font-weight: 700;
+        color: var(--color-text-main);
+      }
+
+      .breadcrumb-list-name {
+        color: var(--color-text-sub);
+        font-weight: 500;
+      }
+
+      .pill-generated-count {
+        background-color: #eef2ff;
+        border: 1px solid #c7d2fe;
+        color: #4f46e5;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* 3. Category Groups Container */
+      .categories-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .category-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+        background-color: #ffffff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+
+      .category-card:hover {
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      }
+
+      .category-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 14px;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.15s;
+      }
+
+      .category-header-left {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+      }
+
+      .category-icon-box {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .category-icon-box svg {
+        width: 15px;
+        height: 15px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .category-title {
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .category-header-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      .category-count-badge {
+        font-size: 11.5px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 9999px;
+        white-space: nowrap;
+      }
+
+      .category-chevron {
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s ease;
+      }
+
+      .category-chevron svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .category-card.is-collapsed .category-chevron {
+        transform: rotate(180deg);
+      }
+
+      .category-items-list {
+        display: flex;
+        flex-direction: column;
+        background-color: #ffffff;
+      }
+
+      .category-card.is-collapsed .category-items-list {
+        display: none;
+      }
+
+      /* Item Rows */
+      .item-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 14px;
+        border-top: 1px solid #f1f5f9;
+        background-color: #ffffff;
+        transition: background-color 0.15s, opacity 0.15s;
+        position: relative;
+      }
+
+      .item-row:hover {
+        background-color: #f8fafc;
+      }
+
+      .item-row.is-dragging {
+        opacity: 0.4;
+        background-color: #f1f5f9;
+      }
+
+      .item-row.drag-over-top {
+        border-top: 2px solid var(--color-primary);
+      }
+
+      .item-row.drag-over-bottom {
+        border-bottom: 2px solid var(--color-primary);
+      }
+
+      .item-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .checkbox-wrapper {
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
+        border: 1.5px solid #cbd5e1;
+        background-color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.15s ease;
+      }
+
+      .checkbox-wrapper:hover {
+        border-color: var(--color-primary);
+      }
+
+      .checkbox-wrapper.is-checked {
+        background-color: var(--color-primary);
+        border-color: var(--color-primary);
+        color: #ffffff;
+      }
+
+      .checkbox-wrapper svg {
+        width: 12px;
+        height: 12px;
+        stroke: #ffffff;
+        fill: none;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        display: none;
+      }
+
+      .checkbox-wrapper.is-checked svg {
+        display: block;
+      }
+
+      .item-text {
+        font-size: 13.5px;
+        color: #1e293b;
+        line-height: 1.4;
+        flex: 1;
+        word-break: break-word;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .item-right {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .drag-handle {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        cursor: grab;
+        border-radius: 4px;
+        transition: color 0.15s, background-color 0.15s;
+      }
+
+      .drag-handle:hover {
+        color: #475569;
+        background-color: #e2e8f0;
+      }
+
+      .drag-handle:active {
+        cursor: grabbing;
+      }
+
+      .drag-handle svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+      }
+
+      /* 4. Add Custom Item Row */
+      .add-custom-row {
+        border: 1.5px dashed var(--color-purple-border);
+        background-color: #faf5ff;
+        border-radius: 12px;
+        padding: 7px 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+      }
+
+      .add-custom-row:focus-within {
+        border-color: #818cf8;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(91, 79, 233, 0.08);
+      }
+
+      .add-custom-icon {
+        width: 18px;
+        height: 18px;
+        color: var(--color-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .add-custom-icon svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .input-custom-item {
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 13.5px;
+        font-family: inherit;
+        color: var(--color-text-main);
+        flex: 1;
+        min-width: 0;
+      }
+
+      .input-custom-item::placeholder {
+        color: var(--color-text-muted);
+      }
+
+      .btn-add-item {
+        background-color: var(--color-primary);
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.15s, transform 0.1s;
+        flex-shrink: 0;
+      }
+
+      .btn-add-item:hover {
+        background-color: var(--color-primary-hover);
+      }
+
+      .btn-add-item:active {
+        background-color: var(--color-primary-active);
+        transform: scale(0.98);
+      }
+
+      /* 5. Footer Info Row */
+      .footer-info-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 2px;
+      }
+
+      .footer-info-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--color-text-muted);
+      }
+
+      .footer-info-left svg {
+        width: 15px;
+        height: 15px;
+        stroke: var(--color-text-muted);
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
+
+      .btn-regenerate {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--color-text-sub);
+        cursor: pointer;
+        transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+      }
+
+      .btn-regenerate:hover {
+        background-color: var(--color-bg-gray);
+        border-color: #cbd5e1;
+        color: var(--color-text-main);
+      }
+
+      .btn-regenerate svg {
+        width: 14px;
+        height: 14px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      /* 6. Bottom Bar */
+      .bottom-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-top: 14px;
+        border-top: 1px solid #f1f5f9;
+        margin-top: 4px;
+      }
+
+      .bottom-bar-left {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .completed-count-text {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--color-text-main);
+      }
+
+      .reorder-hint-text {
+        font-size: 11.5px;
+        color: var(--color-text-muted);
+        margin-top: 2px;
+      }
+
+      .btn-save-checklist {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background-color: var(--color-primary);
+        color: #ffffff;
+        border: none;
+        border-radius: 9px;
+        padding: 10px 22px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(91, 79, 233, 0.25);
+        transition: background-color 0.15s, transform 0.1s, box-shadow 0.15s;
+        flex-shrink: 0;
+      }
+
+      .btn-save-checklist:hover {
+        background-color: var(--color-primary-hover);
+        box-shadow: 0 3px 8px rgba(91, 79, 233, 0.32);
+      }
+
+      .btn-save-checklist:active {
+        background-color: var(--color-primary-active);
+        transform: scale(0.98);
+      }
+
+      .btn-save-checklist svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="popup-container">
+      <!-- 1. Header Row -->
+      <header class="header-row">
+        <div class="header-left">
+          <div class="header-icon-box">
+            <!-- Checklist/Tasks Icon -->
+            <svg viewBox="0 0 24 24">
+              <path d="M9 11l3 3L22 4"></path>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+          </div>
+          <div class="header-text">
+            <h1 class="header-title">Smart Checklist Generator</h1>
+            <span class="header-subtitle">AI-tailored to your card's goals</span>
+          </div>
+        </div>
+        <button class="btn-close" id="btn-close-popup" title="Close" aria-label="Close popup">×</button>
+      </header>
+
+      <!-- 2. Breadcrumb + Count Row -->
+      <div class="breadcrumb-row">
+        <div class="breadcrumb-left">
+          <!-- Grid/Board Icon -->
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span class="breadcrumb-card-name" id="breadcrumb-card-name">Website Redesign</span>
+          <span>· in list</span>
+          <span class="breadcrumb-list-name" id="breadcrumb-list-name">In Progress</span>
+        </div>
+        <span class="pill-generated-count" id="pill-generated-count">
+          ✓ <span id="total-count-pill">12</span> items generated
+        </span>
+      </div>
+
+      <!-- 3. Category Groups Container -->
+      <div class="categories-container" id="categories-container">
+        <!-- Rendered dynamically from checklistData -->
+      </div>
+
+      <!-- 4. Add a Custom Item Row -->
+      <div class="add-custom-row">
+        <div class="add-custom-icon">
+          <svg viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </div>
+        <input
+          type="text"
+          id="input-custom-item"
+          class="input-custom-item"
+          placeholder="Add a custom item..."
+          autocomplete="off"
+        />
+        <button type="button" id="btn-add-custom-item" class="btn-add-item">Add</button>
+      </div>
+
+      <!-- 5. Footer Info Row -->
+      <div class="footer-info-row">
+        <div class="footer-info-left">
+          <!-- Sparkle Icon -->
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2zM19 16l1.2 3.3L23.5 20.5l-3.3 1.2L19 25l-1.2-3.3-3.3-1.2 3.3-1.2L19 16z"></path>
+          </svg>
+          <span>AI-generated · Based on card description</span>
+        </div>
+        <button type="button" id="btn-regenerate" class="btn-regenerate">
+          <svg viewBox="0 0 24 24">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span>Regenerate</span>
+        </button>
+      </div>
+
+      <!-- 6. Bottom Bar -->
+      <footer class="bottom-bar">
+        <div class="bottom-bar-left">
+          <span class="completed-count-text" id="completed-count-display">1 of 12 completed</span>
+          <span class="reorder-hint-text">Drag items to reorder</span>
+        </div>
+        <button type="button" id="btn-save-checklist" class="btn-save-checklist">
+          <!-- Save/Checklist Icon -->
+          <svg viewBox="0 0 24 24">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          <span>Save & Get Next Steps</span>
+        </button>
+      </footer>
+    </div>
+
+    <!-- Script Entry Point -->
+    <script type="module" src="/src/checklist-generator.js"></script>
+  </body>
+</html>
