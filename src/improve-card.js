@@ -265,16 +265,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // 6. Save & Generate Checklist Button handler
   const btnSaveChecklist = document.getElementById('btn-save-checklist');
   if (btnSaveChecklist) {
-    btnSaveChecklist.addEventListener('click', () => {
+    btnSaveChecklist.addEventListener('click', (event) => {
       // TODO: write improved description back to card via Trello REST API, and create a real Trello checklist from keyTasks — requires OAuth token
       console.log('save triggered', aiImprovementData);
-      if (t && typeof t.popup === 'function') {
-        t.popup({
-          title: 'Smart Checklist Generator',
-          url: t.signUrl ? t.signUrl('./checklist-generator.html') : './checklist-generator.html',
-          height: 600,
-        });
+      const targetUrl = (t && typeof t.signUrl === 'function')
+        ? t.signUrl('./checklist-generator.html')
+        : './checklist-generator.html';
+
+      if (window.self !== window.top && t && typeof t.popup === 'function') {
+        try {
+          t.popup({
+            title: 'Smart Checklist Generator',
+            url: targetUrl,
+            height: 600,
+            mouseEvent: event,
+          });
+        } catch (err) {
+          console.warn('[Improve Card] t.popup failed, falling back to direct navigation:', err);
+          window.location.href = './checklist-generator.html';
+        }
       } else {
+        // Fallback when viewing standalone in a browser tab
+        console.log('[Improve Card] Opening checklist-generator.html (standalone preview)');
         window.location.href = './checklist-generator.html';
       }
     });
