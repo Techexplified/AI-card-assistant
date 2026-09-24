@@ -6,7 +6,7 @@ export async function callOpenRouter(messages, options = {}) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: options.model || 'google/gemini-2.0-flash-exp:free',
+      model: options.model || 'openrouter/free',
       messages,
       response_format: { type: 'json_object' }
     })
