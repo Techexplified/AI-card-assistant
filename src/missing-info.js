@@ -237,7 +237,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnAiComplete = document.getElementById('btn-ai-complete');
   if (btnAiComplete) {
     btnAiComplete.addEventListener('click', () => {
-      window.location.href = './improve-card.html';
+      const search = window.location.search || '';
+      const targetUrl = (t && typeof t.signUrl === 'function')
+        ? t.signUrl('./improve-card.html')
+        : ('./improve-card.html' + search);
+      window.location.href = targetUrl;
     });
   }
 

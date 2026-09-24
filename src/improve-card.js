@@ -454,34 +454,35 @@ function initCardData() {
   const isInsideTrello = window.self !== window.top && Boolean(t);
 
   if (isInsideTrello && typeof t.card === 'function') {
-    // Race Trello iframe handshake with a 1.5 second timeout
+    // Fetch live card & list data from Trello with 3.5s timeout
     const fetchTrelloData = Promise.all([
-      t.card('desc', 'name'),
-      typeof t.list === 'function' ? t.list('name') : Promise.resolve(null)
+      t.card('all'),
+      typeof t.list === 'function' ? t.list('all') : Promise.resolve(null)
     ]);
 
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Trello bridge timed out')), 1500);
+      setTimeout(() => reject(new Error('Trello bridge timed out')), 3500);
     });
 
     Promise.race([fetchTrelloData, timeoutPromise])
       .then(function ([card, list]) {
-        if (card && card.name) {
-          currentCardName = card.name;
+        if (card) {
+          currentCardName = card.name || 'Untitled';
+          currentCardDescription = typeof card.desc === 'string' ? card.desc : '';
+
           const cardNameEl = document.getElementById('breadcrumb-card-name');
-          if (cardNameEl) cardNameEl.textContent = card.name;
+          if (cardNameEl) cardNameEl.textContent = currentCardName;
         }
         if (list && list.name) {
           const listNameEl = document.getElementById('breadcrumb-list-name');
           if (listNameEl) listNameEl.textContent = list.name;
         }
 
-        currentCardDescription = (card && card.desc) ? card.desc : '';
         updateOriginalCardView(currentCardDescription);
         loadAiImprovements(currentCardDescription, currentCardName);
       })
       .catch(function (err) {
-        console.warn('[Improve Card] Falling back to standalone sample data:', err);
+        console.warn('[Improve Card] Could not fetch live card from Trello, using sample fallback:', err);
         currentCardDescription = FALLBACK_DESCRIPTION;
         currentCardName = FALLBACK_CARD_NAME;
         const cardNameEl = document.getElementById('breadcrumb-card-name');
@@ -570,9 +571,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnSaveChecklist) {
     btnSaveChecklist.addEventListener('click', (event) => {
       console.log('save triggered with latest AI data:', latestAiData);
+      const search = window.location.search || '';
       const targetUrl = (t && typeof t.signUrl === 'function')
         ? t.signUrl('./checklist-generator.html')
-        : './checklist-generator.html';
+        : ('./checklist-generator.html' + search);
 
       if (window.self !== window.top && t && typeof t.popup === 'function') {
         try {
@@ -584,12 +586,12 @@ document.addEventListener('DOMContentLoaded', () => {
           });
         } catch (err) {
           console.warn('[Improve Card] t.popup failed, falling back to direct navigation:', err);
-          window.location.href = './checklist-generator.html';
+          window.location.href = targetUrl;
         }
       } else {
         // Fallback when viewing standalone in a browser tab
         console.log('[Improve Card] Opening checklist-generator.html (standalone preview)');
-        window.location.href = './checklist-generator.html';
+        window.location.href = targetUrl;
       }
     });
   }
