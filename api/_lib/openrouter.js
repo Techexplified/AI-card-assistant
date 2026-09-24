@@ -6,7 +6,7 @@ export async function callOpenRouter(messages, options = {}) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: options.model || 'nvidia/nemotron-3-nano-30b-a3b:free',
+      model: options.model || 'google/gemini-2.0-flash-exp:free',
       messages,
       response_format: { type: 'json_object' }
     })
