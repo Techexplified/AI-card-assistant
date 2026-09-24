@@ -14,6 +14,7 @@ let improvedColumnTemplate = '';
 const FALLBACK_DESCRIPTION =
   "We need to redesign the marketing website. It's not working well and users are complaining. Need to make it better and improve conversions somehow.\n\nShould look modern and work on mobile. Jane said stakeholders want it done soon. Maybe add new landing pages too? Not sure about timeline or who's doing it.";
 const FALLBACK_CARD_NAME = 'Website Redesign';
+const FALLBACK_LIST_NAME = 'In Progress';
 
 /**
  * Inject loading animation styles
@@ -97,7 +98,10 @@ async function fetchImprovements(description, cardName) {
         errorMessage = errData.details ? `${errData.error} (${errData.details})` : errData.error;
       }
     } catch (e) {
-      // ignore json parse error
+      // If 404 when testing on plain vite without vercel dev
+      if (response.status === 404) {
+        errorMessage = 'Endpoint /api/improve-card not found. When testing locally, run with Vercel CLI (vercel dev) or deploy to Vercel.';
+      }
     }
     throw new Error(errorMessage);
   }
@@ -222,7 +226,7 @@ function showErrorState(errorMessage) {
         </div>
         <span class="pill-enhanced" style="background-color: #fee2e2; color: #dc2626;">Error</span>
       </div>
-      <div class="card-box" style="padding: 30px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: #fef2f2; border: 1.5px solid var(--color-red-border); border-radius: 10px;">
+      <div class="card-box" style="padding: 28px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: #fef2f2; border: 1.5px solid var(--color-red-border); border-radius: 10px;">
         <div style="width: 36px; height: 36px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center;">
           <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
@@ -444,44 +448,59 @@ function setViewMode(mode) {
 }
 
 /**
- * Fetch live card description and metadata from Trello, then load AI improvements
+ * Fetch live card description and metadata from Trello with a safe timeout
  */
 function initCardData() {
-  if (t && typeof t.card === 'function') {
-    t.card('desc', 'name', 'list')
-      .then(function (card) {
-        if (card) {
-          if (card.name) {
-            currentCardName = card.name;
-            const cardNameEl = document.getElementById('breadcrumb-card-name');
-            if (cardNameEl) cardNameEl.textContent = card.name;
-          }
-          if (card.list && card.list.name) {
-            const listNameEl = document.getElementById('breadcrumb-list-name');
-            if (listNameEl) listNameEl.textContent = card.list.name;
-          }
-          currentCardDescription = card.desc || '';
-          updateOriginalCardView(currentCardDescription);
-          loadAiImprovements(currentCardDescription, currentCardName);
-        } else {
-          currentCardDescription = FALLBACK_DESCRIPTION;
-          currentCardName = FALLBACK_CARD_NAME;
-          updateOriginalCardView(currentCardDescription);
-          loadAiImprovements(currentCardDescription, currentCardName);
+  const isInsideTrello = window.self !== window.top && Boolean(t);
+
+  if (isInsideTrello && typeof t.card === 'function') {
+    // Race Trello iframe handshake with a 1.5 second timeout
+    const fetchTrelloData = Promise.all([
+      t.card('desc', 'name'),
+      typeof t.list === 'function' ? t.list('name') : Promise.resolve(null)
+    ]);
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Trello bridge timed out')), 1500);
+    });
+
+    Promise.race([fetchTrelloData, timeoutPromise])
+      .then(function ([card, list]) {
+        if (card && card.name) {
+          currentCardName = card.name;
+          const cardNameEl = document.getElementById('breadcrumb-card-name');
+          if (cardNameEl) cardNameEl.textContent = card.name;
         }
+        if (list && list.name) {
+          const listNameEl = document.getElementById('breadcrumb-list-name');
+          if (listNameEl) listNameEl.textContent = list.name;
+        }
+
+        currentCardDescription = (card && card.desc) ? card.desc : '';
+        updateOriginalCardView(currentCardDescription);
+        loadAiImprovements(currentCardDescription, currentCardName);
       })
       .catch(function (err) {
-        console.warn('[Improve Card] Could not fetch live card from Trello:', err);
-        // Fallback for standalone preview matching reference
+        console.warn('[Improve Card] Falling back to standalone sample data:', err);
         currentCardDescription = FALLBACK_DESCRIPTION;
         currentCardName = FALLBACK_CARD_NAME;
+        const cardNameEl = document.getElementById('breadcrumb-card-name');
+        if (cardNameEl) cardNameEl.textContent = FALLBACK_CARD_NAME;
+        const listNameEl = document.getElementById('breadcrumb-list-name');
+        if (listNameEl) listNameEl.textContent = FALLBACK_LIST_NAME;
+
         updateOriginalCardView(currentCardDescription);
         loadAiImprovements(currentCardDescription, currentCardName);
       });
   } else {
-    // Standalone preview fallback
+    // Standalone browser preview (direct tab)
     currentCardDescription = FALLBACK_DESCRIPTION;
     currentCardName = FALLBACK_CARD_NAME;
+    const cardNameEl = document.getElementById('breadcrumb-card-name');
+    if (cardNameEl) cardNameEl.textContent = FALLBACK_CARD_NAME;
+    const listNameEl = document.getElementById('breadcrumb-list-name');
+    if (listNameEl) listNameEl.textContent = FALLBACK_LIST_NAME;
+
     updateOriginalCardView(currentCardDescription);
     loadAiImprovements(currentCardDescription, currentCardName);
   }
@@ -496,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
     improvedColumnTemplate = colImproved.innerHTML;
   }
 
-  // 2. Fetch live description from Trello and start AI processing
+  // 2. Fetch live description from Trello (or fallback) and start AI processing
   initCardData();
 
   // 3. View Mode Toggle wiring

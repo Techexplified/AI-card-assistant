@@ -171,9 +171,45 @@ function renderMissingInfo(data) {
   }
 }
 
+/**
+ * Fetch live card & list metadata from Trello with a safe fallback
+ */
+function initCardData() {
+  const isInsideTrello = window.self !== window.top && Boolean(t);
+
+  if (isInsideTrello && typeof t.card === 'function') {
+    const fetchTrelloData = Promise.all([
+      t.card('name'),
+      typeof t.list === 'function' ? t.list('name') : Promise.resolve(null)
+    ]);
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Trello bridge timed out')), 1500);
+    });
+
+    Promise.race([fetchTrelloData, timeoutPromise])
+      .then(function ([card, list]) {
+        if (card && card.name) {
+          const cardNameEl = document.getElementById('breadcrumb-card-name');
+          if (cardNameEl) cardNameEl.textContent = card.name;
+        }
+        if (list && list.name) {
+          const listNameEl = document.getElementById('breadcrumb-list-name');
+          if (listNameEl) listNameEl.textContent = list.name;
+        }
+      })
+      .catch(function (err) {
+        console.warn('[Missing Info Detector] Using fallback breadcrumb info:', err);
+      });
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Render initial data
   renderMissingInfo(missingInfoData);
+
+  // Fetch live metadata
+  initCardData();
 
   // Close Popup / Modal handler
   const btnClose = document.getElementById('btn-close-popup');
