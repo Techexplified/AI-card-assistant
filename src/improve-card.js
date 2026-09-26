@@ -569,8 +569,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // 6. Save & Generate Checklist Button handler
   const btnSaveChecklist = document.getElementById('btn-save-checklist');
   if (btnSaveChecklist) {
-    btnSaveChecklist.addEventListener('click', () => {
+    btnSaveChecklist.addEventListener('click', async () => {
       console.log('save triggered with latest AI data:', latestAiData);
+
+      if (latestAiData) {
+        if (t && typeof t.set === 'function') {
+          try {
+            await t.set('card', 'shared', 'improvementData', {
+              objective: latestAiData.objective,
+              keyTasks: latestAiData.keyTasks,
+              definitionOfDone: latestAiData.definitionOfDone
+            });
+          } catch (e) {
+            console.warn('[Improve Card] Could not persist improvementData to Trello:', e);
+          }
+        }
+        // Fallback for standalone preview / browser testing without Trello iframe parent
+        try {
+          sessionStorage.setItem('trello_improvementData', JSON.stringify({
+            objective: latestAiData.objective,
+            keyTasks: latestAiData.keyTasks,
+            definitionOfDone: latestAiData.definitionOfDone
+          }));
+        } catch (e) {}
+      }
+
+      // TODO: write rewritten description back to the actual Trello card via REST API — requires OAuth token
       const search = window.location.search || '';
       const targetUrl = (t && typeof t.signUrl === 'function')
         ? t.signUrl('./checklist-generator.html')

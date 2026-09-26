@@ -1,49 +1,15 @@
-/* global window, document */
+/* global window, document, sessionStorage */
 
 // Initialize Trello Power-Up iframe interface
 var t = window.TrelloPowerUp && typeof window.TrelloPowerUp.iframe === 'function'
   ? window.TrelloPowerUp.iframe()
   : null;
 
-// TODO: replace with real fetch from backend — AI-generated checklist based on
-// the card's description/objective/key tasks from the previous step.
-// Expected shape from the API should match this structure exactly so rendering
-// logic doesn't need to change, only this initial assignment.
-let checklistData = [
-  {
-    id: 'design',
-    name: 'Design',
-    color: 'purple',
-    items: [
-      { id: 'd1', text: 'Review current website analytics and UX audit', completed: true },
-      { id: 'd2', text: 'Identify UX issues and opportunities', completed: false },
-      { id: 'd3', text: 'Create wireframes for key pages', completed: false },
-      { id: 'd4', text: 'Design high-fidelity mockups in Figma', completed: false }
-    ]
-  },
-  {
-    id: 'development',
-    name: 'Development',
-    color: 'green',
-    items: [
-      { id: 'dev1', text: 'Set up development environment and repo', completed: false },
-      { id: 'dev2', text: 'Implement responsive layouts and components', completed: false },
-      { id: 'dev3', text: 'Integrate and tracking scripts', completed: false },
-      { id: 'dev4', text: 'Implement conversion-focused CTAs', completed: false }
-    ]
-  },
-  {
-    id: 'qa-testing',
-    name: 'QA & Testing',
-    color: 'orange',
-    items: [
-      { id: 'qa1', text: 'Test on mobile, tablet, and desktop', completed: false },
-      { id: 'qa2', text: 'Cross-browser compatibility check', completed: false },
-      { id: 'qa3', text: 'Performance and page speed audit', completed: false },
-      { id: 'qa4', text: 'Stakeholder sign-off and final launch', completed: false }
-    ]
-  }
-];
+// Live checklist data structure
+let checklistData = [];
+let currentImprovementData = null;
+let currentCardName = 'Untitled';
+let currentListName = 'In Progress';
 
 // Color theme lookup dictionary for flexible category styling
 const CATEGORY_THEMES = {
@@ -79,6 +45,17 @@ const CATEGORY_THEMES = {
     badgeText: '#9a3412',
     chevronColor: '#d97706',
     iconSvg: `<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>`,
+  },
+  blue: {
+    bg: '#eff6ff',
+    border: '#bfdbfe',
+    iconBg: '#dbeafe',
+    iconColor: '#2563eb',
+    titleColor: '#1e3a8a',
+    badgeBg: '#dbeafe',
+    badgeText: '#1e40af',
+    chevronColor: '#2563eb',
+    iconSvg: `<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
   },
   gray: {
     bg: '#f8fafc',
@@ -136,8 +113,16 @@ function updateCountsDisplay() {
  */
 function autoResize() {
   if (t && typeof t.sizeTo === 'function') {
-    const container = document.getElementById('popup-container') || document.body;
-    t.sizeTo(container);
+    try {
+      t.sizeTo('body');
+    } catch (e) {
+      try {
+        const container = document.getElementById('popup-container') || document.body;
+        t.sizeTo(container);
+      } catch (err) {
+        console.warn('[Checklist Generator] autoResize error:', err);
+      }
+    }
   }
 }
 
@@ -159,6 +144,243 @@ function closePopupAction() {
     } else {
       window.close();
     }
+  }
+}
+
+/**
+ * Read persisted improvement data from Trello card storage or fallback session
+ */
+async function getStoredImprovementData() {
+  let data = null;
+  if (t && typeof t.get === 'function') {
+    try {
+      data = await t.get('card', 'shared', 'improvementData');
+    } catch (e) {
+      console.warn('[Checklist Generator] Could not read improvementData from Trello card storage:', e);
+    }
+  }
+
+  if (!data) {
+    try {
+      const sessionData = sessionStorage.getItem('trello_improvementData');
+      if (sessionData) {
+        data = JSON.parse(sessionData);
+      }
+    } catch (e) {}
+  }
+
+  return data;
+}
+
+/**
+ * Call serverless endpoint to generate categorized checklist
+ */
+async function fetchChecklist(improvementData, cardName) {
+  const response = await fetch('/api/generate-checklist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...improvementData, cardName })
+  });
+
+  if (!response.ok) {
+    let errorMsg = `Server returned ${response.status}`;
+    try {
+      const errData = await response.json();
+      if (errData && errData.error) {
+        errorMsg = errData.details ? `${errData.error} (${errData.details})` : errData.error;
+      }
+    } catch (e) {}
+    throw new Error(errorMsg);
+  }
+
+  const data = await response.json();
+  return data.categories;
+}
+
+/**
+ * Show loading spinner while AI generates checklist
+ */
+function showLoadingState() {
+  const container = document.getElementById('categories-container');
+  if (container) {
+    container.innerHTML = `
+      <div class="checklist-loading-box">
+        <div class="checklist-spinner"></div>
+        <div>
+          <div class="checklist-loading-title">Generating Smart Checklist...</div>
+          <div class="checklist-loading-sub">Breaking down objective into categorized, actionable steps</div>
+        </div>
+      </div>
+    `;
+  }
+
+  const btnSave = document.getElementById('btn-save-checklist');
+  if (btnSave) {
+    btnSave.disabled = true;
+  }
+
+  const btnRegen = document.getElementById('btn-regenerate');
+  if (btnRegen) {
+    btnRegen.disabled = true;
+    btnRegen.innerHTML = `<span>⏳ Generating...</span>`;
+  }
+
+  const totalCountPill = document.getElementById('total-count-pill');
+  if (totalCountPill) totalCountPill.textContent = '...';
+
+  autoResize();
+}
+
+/**
+ * Show missing improvement data state with navigation link back to improve step
+ */
+function showMissingState() {
+  const container = document.getElementById('categories-container');
+  if (container) {
+    container.innerHTML = `
+      <div class="checklist-empty-state">
+        <div class="state-icon-box warning">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="state-title">No Card Analysis Found</div>
+          <div class="state-desc">No card analysis found — go back and generate improvements first.</div>
+        </div>
+        <button type="button" id="btn-go-improve" class="btn-action-state" style="background-color: var(--color-primary); color: #ffffff;">
+          <span>← Go to Improve Card</span>
+        </button>
+      </div>
+    `;
+
+    const btnGo = document.getElementById('btn-go-improve');
+    if (btnGo) {
+      btnGo.addEventListener('click', () => {
+        const search = window.location.search || '';
+        const targetUrl = (t && typeof t.signUrl === 'function')
+          ? t.signUrl('./improve-card.html')
+          : ('./improve-card.html' + search);
+        window.location.href = targetUrl;
+      });
+    }
+  }
+
+  const btnSave = document.getElementById('btn-save-checklist');
+  if (btnSave) btnSave.disabled = true;
+
+  const btnRegen = document.getElementById('btn-regenerate');
+  if (btnRegen) {
+    btnRegen.disabled = true;
+    btnRegen.innerHTML = `
+      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <polyline points="1 20 1 14 7 14"></polyline>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      </svg>
+      <span>Regenerate</span>
+    `;
+  }
+
+  updateCountsDisplay();
+  autoResize();
+}
+
+/**
+ * Show inline error state with a retry button
+ */
+function showErrorState(errorMessage) {
+  const container = document.getElementById('categories-container');
+  if (container) {
+    container.innerHTML = `
+      <div class="checklist-error-state">
+        <div class="state-icon-box error">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="state-title">Couldn't Generate Checklist</div>
+          <div class="state-desc">${errorMessage || 'An error occurred while generating the checklist.'}</div>
+        </div>
+        <button type="button" id="btn-retry-checklist" class="btn-action-state" style="background-color: #ffffff; border-color: #fca5a5; color: #b91c1c;">
+          <span>🔄 Try Again</span>
+        </button>
+      </div>
+    `;
+
+    const btnRetry = document.getElementById('btn-retry-checklist');
+    if (btnRetry) {
+      btnRetry.addEventListener('click', () => {
+        loadChecklistData();
+      });
+    }
+  }
+
+  const btnSave = document.getElementById('btn-save-checklist');
+  if (btnSave) btnSave.disabled = true;
+
+  const btnRegen = document.getElementById('btn-regenerate');
+  if (btnRegen) {
+    btnRegen.disabled = false;
+    btnRegen.innerHTML = `
+      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <polyline points="1 20 1 14 7 14"></polyline>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      </svg>
+      <span>Regenerate</span>
+    `;
+  }
+
+  updateCountsDisplay();
+  autoResize();
+}
+
+/**
+ * Coordinate loading and rendering of live AI checklist
+ */
+async function loadChecklistData() {
+  const improvementData = await getStoredImprovementData();
+
+  if (!improvementData || !improvementData.objective) {
+    showMissingState();
+    return;
+  }
+
+  currentImprovementData = improvementData;
+  showLoadingState();
+
+  try {
+    const categories = await fetchChecklist(improvementData, currentCardName);
+    checklistData = Array.isArray(categories) ? categories : [];
+
+    // Restore buttons
+    const btnSave = document.getElementById('btn-save-checklist');
+    if (btnSave) btnSave.disabled = false;
+
+    const btnRegen = document.getElementById('btn-regenerate');
+    if (btnRegen) {
+      btnRegen.disabled = false;
+      btnRegen.innerHTML = `
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span>Regenerate</span>
+      `;
+    }
+
+    renderChecklist();
+    autoResize();
+  } catch (err) {
+    console.error('[Checklist Generator] loadChecklistData error:', err);
+    showErrorState(err.message || 'Failed to generate checklist');
   }
 }
 
@@ -270,6 +492,7 @@ function renderChecklist() {
         const itemText = document.createElement('span');
         itemText.className = 'item-text';
         itemText.textContent = item.text;
+        itemText.title = 'Click to edit item';
 
         // Toggle completed handler
         const toggleItem = (e) => {
@@ -281,7 +504,6 @@ function renderChecklist() {
         };
 
         checkboxWrapper.addEventListener('click', toggleItem);
-        itemText.addEventListener('click', toggleItem);
         checkboxWrapper.addEventListener('keydown', (e) => {
           if (e.key === ' ' || e.key === 'Enter') {
             e.preventDefault();
@@ -289,12 +511,85 @@ function renderChecklist() {
           }
         });
 
+        // Inline edit handler for item text
+        const startEditing = (e) => {
+          e.stopPropagation();
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'item-edit-input';
+          input.value = item.text;
+
+          let isCommitted = false;
+
+          const finishEditing = (save) => {
+            if (isCommitted) return;
+            isCommitted = true;
+            if (save) {
+              const trimmed = input.value.trim();
+              if (trimmed) {
+                item.text = trimmed;
+              }
+            }
+            renderChecklist();
+          };
+
+          input.addEventListener('keydown', (ke) => {
+            if (ke.key === 'Enter') {
+              ke.preventDefault();
+              finishEditing(true);
+            } else if (ke.key === 'Escape') {
+              ke.preventDefault();
+              finishEditing(false);
+            }
+          });
+
+          input.addEventListener('blur', () => {
+            finishEditing(true);
+          });
+
+          itemLeft.replaceChild(input, itemText);
+          input.focus();
+          input.select();
+        };
+
+        itemText.addEventListener('click', startEditing);
+
         itemLeft.appendChild(checkboxWrapper);
         itemLeft.appendChild(itemText);
 
-        // Item Right: Drag Handle
+        // Item Right: Delete Button + Drag Handle
         const itemRight = document.createElement('div');
         itemRight.className = 'item-right';
+
+        // Small "×" delete icon
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'btn-delete-item';
+        deleteBtn.title = 'Delete item';
+        deleteBtn.setAttribute('aria-label', 'Delete item');
+        deleteBtn.innerHTML = `
+          <svg viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        `;
+
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cat = checklistData.find((c) => c.id === category.id);
+          if (cat && Array.isArray(cat.items)) {
+            const idx = cat.items.findIndex((it) => it.id === item.id);
+            if (idx !== -1) {
+              cat.items.splice(idx, 1);
+            }
+            // If a category ends up with zero items after a delete, remove the empty category card entirely
+            if (cat.items.length === 0) {
+              checklistData = checklistData.filter((c) => c.id !== category.id);
+            }
+            renderChecklist();
+            autoResize();
+          }
+        });
 
         const dragHandle = document.createElement('div');
         dragHandle.className = 'drag-handle';
@@ -310,6 +605,7 @@ function renderChecklist() {
           </svg>
         `;
 
+        itemRight.appendChild(deleteBtn);
         itemRight.appendChild(dragHandle);
 
         itemRow.appendChild(itemLeft);
@@ -363,7 +659,6 @@ function renderChecklist() {
           e.preventDefault();
           itemRow.classList.remove('drag-over-top', 'drag-over-bottom');
 
-          // Basic reorder support — refine later if cross-category drag is needed
           if (!dragContext || dragContext.categoryId !== category.id) return;
 
           const fromIndex = dragContext.itemIndex;
@@ -441,10 +736,12 @@ function initCardData() {
     ])
       .then(function ([card, list]) {
         if (card && card.name) {
+          currentCardName = card.name;
           const cardNameEl = document.getElementById('breadcrumb-card-name');
           if (cardNameEl) cardNameEl.textContent = card.name;
         }
         if (list && list.name) {
+          currentListName = list.name;
           const listNameEl = document.getElementById('breadcrumb-list-name');
           if (listNameEl) listNameEl.textContent = list.name;
         }
@@ -457,11 +754,11 @@ function initCardData() {
 
 // Event Listeners Initialization
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Initial Render
-  renderChecklist();
-
-  // 2. Fetch live Trello metadata
+  // 1. Fetch live Trello metadata
   initCardData();
+
+  // 2. Fetch and render live AI checklist data
+  loadChecklistData();
 
   // 3. Add Custom Item wiring
   const btnAddCustom = document.getElementById('btn-add-custom-item');
@@ -480,11 +777,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 4. Regenerate Button handler
+  // Note: Regenerating re-calls fetchChecklist with the stored improvementData and replaces the current list,
+  // discarding any manual edits/deletions made so far in this session.
   const btnRegenerate = document.getElementById('btn-regenerate');
   if (btnRegenerate) {
     btnRegenerate.addEventListener('click', () => {
-      // TODO: call backend AI endpoint to regenerate checklistData based on card description
-      console.log('regenerate checklist triggered');
+      loadChecklistData();
     });
   }
 
