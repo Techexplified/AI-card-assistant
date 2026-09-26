@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return t.modal({
           title: 'Missing Info Detector',
           url: t.signUrl ? t.signUrl('./missing-info.html') : './missing-info.html',
-          height: 650,
+          height: 580,
           fullscreen: false,
           accentColor: '#5b4fe9',
         });
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return t.modal({
         title: 'Card Readiness Score',
         url: t.signUrl ? t.signUrl('./readiness-score.html') : './readiness-score.html',
-        height: 680,
+        height: 580,
         fullscreen: false,
         accentColor: '#5b4fe9',
       });

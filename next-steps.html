@@ -80,12 +80,15 @@
       #popup-container {
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
         width: 100%;
         max-width: 680px;
+        max-height: 580px;
         margin: 0 auto;
-        padding: 16px 20px 24px 20px;
+        padding: 14px 18px 16px 18px;
         box-sizing: border-box;
+        overflow-y: auto;
+        overflow-x: hidden;
       }
 
       /* 1. Header Row */
@@ -715,11 +718,16 @@
 
       /* 6. Bottom Bar */
       .bottom-bar {
+        position: sticky;
+        bottom: 0;
+        background-color: #ffffff;
+        z-index: 10;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 16px;
-        padding-top: 14px;
+        padding-top: 12px;
+        padding-bottom: 2px;
         border-top: 1px solid #f1f5f9;
         margin-top: 4px;
       }
