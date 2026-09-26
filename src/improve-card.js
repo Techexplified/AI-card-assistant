@@ -569,30 +569,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // 6. Save & Generate Checklist Button handler
   const btnSaveChecklist = document.getElementById('btn-save-checklist');
   if (btnSaveChecklist) {
-    btnSaveChecklist.addEventListener('click', (event) => {
+    btnSaveChecklist.addEventListener('click', () => {
       console.log('save triggered with latest AI data:', latestAiData);
       const search = window.location.search || '';
       const targetUrl = (t && typeof t.signUrl === 'function')
         ? t.signUrl('./checklist-generator.html')
         : ('./checklist-generator.html' + search);
 
-      if (window.self !== window.top && t && typeof t.popup === 'function') {
-        try {
-          t.popup({
-            title: 'Smart Checklist Generator',
-            url: targetUrl,
-            height: 600,
-            mouseEvent: event,
-          });
-        } catch (err) {
-          console.warn('[Improve Card] t.popup failed, falling back to direct navigation:', err);
-          window.location.href = targetUrl;
-        }
-      } else {
-        // Fallback when viewing standalone in a browser tab
-        console.log('[Improve Card] Opening checklist-generator.html (standalone preview)');
-        window.location.href = targetUrl;
-      }
+      console.log('[Improve Card] Redirecting to checklist-generator.html');
+      window.location.href = targetUrl;
     });
   }
 

@@ -142,13 +142,23 @@ function autoResize() {
 }
 
 /**
- * Close popup helper
+ * Close modal / popup helper
  */
 function closePopupAction() {
-  if (t && typeof t.closePopup === 'function') {
-    t.closePopup();
+  if (window.self !== window.top && t) {
+    if (typeof t.closeModal === 'function') {
+      try { t.closeModal(); } catch (e) {}
+    }
+    if (typeof t.closePopup === 'function') {
+      try { t.closePopup(); } catch (e) {}
+    }
   } else {
-    window.close();
+    console.log('[Checklist Generator] Close popup triggered (standalone preview)');
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.close();
+    }
   }
 }
 
@@ -481,7 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 5. Save & Get Next Steps Button handler
   const btnSaveChecklist = document.getElementById('btn-save-checklist');
   if (btnSaveChecklist) {
-    btnSaveChecklist.addEventListener('click', (event) => {
+    btnSaveChecklist.addEventListener('click', () => {
       // TODO: write checklist to the actual Trello card via REST API (create checklist + items per category, or flatten into one checklist) — requires OAuth token
       console.log('save checklist triggered', checklistData);
       const search = window.location.search || '';
@@ -489,23 +499,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ? t.signUrl('./next-steps.html')
         : ('./next-steps.html' + search);
 
-      if (window.self !== window.top && t && typeof t.popup === 'function') {
-        try {
-          t.popup({
-            title: 'Suggested Next Steps',
-            url: targetUrl,
-            height: 600,
-            mouseEvent: event,
-          });
-        } catch (err) {
-          console.warn('[Checklist Generator] t.popup failed, falling back to direct navigation:', err);
-          window.location.href = targetUrl;
-        }
-      } else {
-        // Fallback when viewing standalone in a browser tab
-        console.log('[Checklist Generator] Opening next-steps.html (standalone preview)');
-        window.location.href = targetUrl;
-      }
+      console.log('[Checklist Generator] Redirecting to next-steps.html');
+      window.location.href = targetUrl;
     });
   }
 
