@@ -95,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnViewDetails = document.getElementById('btn-view-details');
   if (btnViewDetails) {
     btnViewDetails.addEventListener('click', (event) => {
+      window.scrollTo(0, 0);
       if (window.self !== window.top && t && typeof t.modal === 'function') {
         return t.modal({
           title: 'Missing Info Detector',
@@ -113,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         // Fallback when testing directly in a standalone browser tab
         console.log('[AI Assistant] Opening missing-info.html (standalone preview)');
+        window.scrollTo(0, 0);
         window.location.href = './missing-info.html';
       }
     });

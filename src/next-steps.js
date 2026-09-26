@@ -295,6 +295,9 @@ async function loadNextStepsData() {
     }
 
     renderNextSteps();
+    window.scrollTo(0, 0);
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
     autoResize();
   } catch (err) {
     console.error('[Next Steps] loadNextStepsData error:', err);
@@ -612,6 +615,13 @@ function initCardData() {
 
 // Event Listeners Initialization
 document.addEventListener('DOMContentLoaded', () => {
+  if ('scrollRestoration' in window.history) {
+    window.history.scrollRestoration = 'manual';
+  }
+  window.scrollTo(0, 0);
+  if (document.documentElement) document.documentElement.scrollTop = 0;
+  if (document.body) document.body.scrollTop = 0;
+
   // 1. Fetch live Trello metadata
   initCardData();
 

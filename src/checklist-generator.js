@@ -798,6 +798,7 @@ document.addEventListener('DOMContentLoaded', () => {
         : ('./next-steps.html' + search);
 
       console.log('[Checklist Generator] Redirecting to next-steps.html');
+      window.scrollTo(0, 0);
       window.location.href = targetUrl;
     });
   }
