@@ -1,8 +1,13 @@
-/* global window, document, sessionStorage */
+/* global window, document, sessionStorage, fetch */
+import { TRELLO_APP_KEY, TRELLO_APP_NAME, TRELLO_APP_AUTHOR } from './config.js';
 
-// Initialize Trello Power-Up iframe interface
+// Initialize Trello Power-Up iframe interface with credentials
 var t = window.TrelloPowerUp && typeof window.TrelloPowerUp.iframe === 'function'
-  ? window.TrelloPowerUp.iframe()
+  ? window.TrelloPowerUp.iframe({
+      appKey: TRELLO_APP_KEY,
+      appName: TRELLO_APP_NAME,
+      appAuthor: TRELLO_APP_AUTHOR,
+    })
   : null;
 
 // Live next steps data
@@ -70,6 +75,22 @@ function closePopupAction() {
       window.close();
     }
   }
+}
+
+/**
+ * Persist live next steps to Trello shared card storage
+ */
+async function persistNextSteps() {
+  if (t && typeof t.set === 'function') {
+    try {
+      await t.set('card', 'shared', 'nextSteps', nextStepsData);
+    } catch (e) {
+      console.warn('[Next Steps] Could not persist nextSteps to Trello card storage:', e);
+    }
+  }
+  try {
+    sessionStorage.setItem('trello_nextSteps', JSON.stringify(nextStepsData));
+  } catch (e) {}
 }
 
 /**
@@ -295,6 +316,7 @@ async function loadNextStepsData() {
     }
 
     renderNextSteps();
+    await persistNextSteps();
     window.scrollTo(0, 0);
     if (document.documentElement) document.documentElement.scrollTop = 0;
     if (document.body) document.body.scrollTop = 0;
@@ -402,6 +424,7 @@ function renderNextSteps() {
       if (stepIdx !== -1) {
         nextStepsData.splice(stepIdx, 1);
         renderNextSteps();
+        persistNextSteps();
         autoResize();
       }
     });
@@ -548,6 +571,7 @@ function setupCustomStepControl() {
 
     collapseForm();
     renderNextSteps();
+    persistNextSteps();
     autoResize();
   };
 
@@ -644,9 +668,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // 5. Finish & Show Card Button handler
   const btnFinish = document.getElementById('btn-finish');
   if (btnFinish) {
-    btnFinish.addEventListener('click', () => {
-      // TODO: decide what "Finish" actually does — closes popup and returns focus to card
+    btnFinish.addEventListener('click', async () => {
       console.log('finish triggered', nextStepsData);
+      await persistNextSteps();
       closePopupAction();
     });
   }

@@ -7,9 +7,9 @@ const t = window.TrelloPowerUp && typeof window.TrelloPowerUp.iframe === 'functi
   : null;
 
 /**
- * Renders the card readiness score or empty state into the DOM
+ * Renders the card readiness score and AI Next Steps block into the DOM
  */
-export function renderSection(readiness) {
+export function renderSection(readiness, nextSteps) {
   const radius = 32;
   const circumference = 2 * Math.PI * radius; // ~201.06
 
@@ -20,6 +20,7 @@ export function renderSection(readiness) {
   const statusTitle = document.getElementById('status-title');
   const statusDescription = document.getElementById('status-description');
 
+  // 1. Render Readiness Score & Status
   if (readiness && typeof readiness.score === 'number') {
     const score = Math.max(0, Math.min(100, Math.round(readiness.score)));
     const scoreColor = getScoreColor(score);
@@ -75,6 +76,51 @@ export function renderSection(readiness) {
     }
     if (statusDescription) {
       statusDescription.textContent = 'Run an analysis to see your score';
+    }
+  }
+
+  // 2. Render Next Steps Block
+  const nextStepsBlock = document.getElementById('next-steps-block');
+  const nextStepsList = document.getElementById('next-steps-list');
+  const countPill = document.getElementById('next-steps-count-pill');
+  const viewAllText = document.getElementById('view-all-steps-text');
+
+  if (nextSteps && Array.isArray(nextSteps) && nextSteps.length > 0) {
+    if (countPill) {
+      countPill.textContent = String(nextSteps.length);
+    }
+    if (viewAllText) {
+      viewAllText.textContent = `View all ${nextSteps.length} step${nextSteps.length === 1 ? '' : 's'}`;
+    }
+
+    if (nextStepsList) {
+      nextStepsList.innerHTML = '';
+      const displaySteps = nextSteps.slice(0, 3);
+      displaySteps.forEach((step, index) => {
+        const row = document.createElement('div');
+        row.className = 'next-step-row';
+
+        const badge = document.createElement('div');
+        badge.className = `next-step-badge ${index === 0 ? 'step-badge-primary' : 'step-badge-secondary'}`;
+        badge.textContent = String(index + 1);
+
+        const text = document.createElement('span');
+        text.className = 'next-step-text';
+        text.textContent = step.title || step.description || `Step ${index + 1}`;
+        text.title = text.textContent;
+
+        row.appendChild(badge);
+        row.appendChild(text);
+        nextStepsList.appendChild(row);
+      });
+    }
+
+    if (nextStepsBlock) {
+      nextStepsBlock.style.display = 'flex';
+    }
+  } else {
+    if (nextStepsBlock) {
+      nextStepsBlock.style.display = 'none';
     }
   }
 }
@@ -143,13 +189,44 @@ function setupEventHandlers() {
   if (ringWrapper) {
     ringWrapper.addEventListener('click', handleScoreDetails);
   }
+
+  // Wire up "View all steps" button in Next Steps block
+  const btnViewAllSteps = document.getElementById('btn-view-all-steps');
+  if (btnViewAllSteps) {
+    btnViewAllSteps.addEventListener('click', (event) => {
+      window.scrollTo(0, 0);
+      if (window.self !== window.top && t && typeof t.modal === 'function') {
+        return t.modal({
+          title: 'Suggested Next Steps',
+          url: t.signUrl ? t.signUrl('./next-steps.html') : './next-steps.html',
+          height: 600,
+          fullscreen: false,
+          accentColor: '#5b4fe9',
+        });
+      } else if (window.self !== window.top && t && typeof t.popup === 'function') {
+        return t.popup({
+          title: 'Suggested Next Steps',
+          url: t.signUrl ? t.signUrl('./next-steps.html') : './next-steps.html',
+          height: 540,
+          mouseEvent: event,
+        });
+      } else {
+        console.log('[AI Assistant] Opening next-steps.html (standalone preview)');
+        window.scrollTo(0, 0);
+        window.location.href = './next-steps.html';
+      }
+    });
+  }
 }
 
 // Subscribe to Trello render lifecycle
 if (t && typeof t.render === 'function') {
   t.render(function () {
-    return t.get('card', 'shared', 'readiness').then(function (readiness) {
-      renderSection(readiness); // undefined/null if never analyzed
+    return Promise.all([
+      t.get('card', 'shared', 'readiness'),
+      t.get('card', 'shared', 'nextSteps'),
+    ]).then(function ([readiness, nextSteps]) {
+      renderSection(readiness, nextSteps);
       return t.sizeTo('body');
     });
   });
@@ -161,10 +238,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // If in standalone preview or before t.render runs
   if (!t || typeof t.render !== 'function') {
     let fallbackReadiness = null;
+    let fallbackNextSteps = null;
     try {
       const stored = sessionStorage.getItem('trello_readiness');
       if (stored) fallbackReadiness = JSON.parse(stored);
+      const storedSteps = sessionStorage.getItem('trello_nextSteps');
+      if (storedSteps) fallbackNextSteps = JSON.parse(storedSteps);
     } catch (e) {}
-    renderSection(fallbackReadiness);
+    renderSection(fallbackReadiness, fallbackNextSteps);
   }
 });

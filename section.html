@@ -229,6 +229,151 @@
         fill: currentColor;
         flex-shrink: 0;
       }
+
+      /* Next Steps Block */
+      .next-steps-block {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      }
+
+      .next-steps-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .next-steps-header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .next-steps-icon-box {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background-color: #ede9fe;
+        color: #5b4fe9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .next-steps-icon-box svg {
+        width: 17px;
+        height: 17px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .next-steps-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+
+      .next-steps-count-pill {
+        background-color: #ede9fe;
+        color: #4f46e5;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 9999px;
+      }
+
+      .next-steps-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .next-step-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .next-step-badge {
+        width: 22px;
+        height: 22px;
+        min-width: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .next-step-badge.step-badge-primary {
+        background-color: #4f46e5;
+        color: #ffffff;
+      }
+
+      .next-step-badge.step-badge-secondary {
+        background-color: #ede9fe;
+        color: #4f46e5;
+      }
+
+      .next-step-text {
+        font-size: 13px;
+        font-weight: 500;
+        color: #334155;
+        line-height: 1.35;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .btn-view-all-steps {
+        width: 100%;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        color: #5b4fe9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+      }
+
+      .btn-view-all-steps:hover {
+        background-color: #f8fafc;
+        border-color: #cbd5e1;
+      }
+
+      .btn-view-all-steps:active {
+        background-color: #f1f5f9;
+      }
+
+      .btn-view-all-steps svg {
+        width: 14px;
+        height: 14px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
     </style>
   </head>
   <body>
@@ -276,6 +421,34 @@
         </svg>
         <span>View Details</span>
       </button>
+
+      <!-- Next Steps Block (Shown when AI next steps are generated) -->
+      <div class="next-steps-block" id="next-steps-block" style="display: none;">
+        <div class="next-steps-header">
+          <div class="next-steps-header-left">
+            <div class="next-steps-icon-box">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 16v-2.38C4 11.5 5.5 9 8 9s4 2.5 4 4.62V16c0 1.5-1.5 3-4 3s-4-1.5-4-3zM14 8v-2.38C14 3.5 15.5 1 18 1s4 2.5 4 4.62V8c0 1.5-1.5 3-4 3s-4-1.5-4-3z"></path>
+                <circle cx="8" cy="18" r="2"></circle>
+                <circle cx="18" cy="10" r="2"></circle>
+              </svg>
+            </div>
+            <span class="next-steps-title">Next Steps</span>
+            <span class="next-steps-count-pill" id="next-steps-count-pill">0</span>
+          </div>
+        </div>
+
+        <div class="next-steps-list" id="next-steps-list">
+          <!-- Dynamically populated step items -->
+        </div>
+
+        <button type="button" class="btn-view-all-steps" id="btn-view-all-steps">
+          <span id="view-all-steps-text">View all steps</span>
+          <svg viewBox="0 0 24 24">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <!-- Logic Script -->

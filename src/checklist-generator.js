@@ -1,8 +1,13 @@
-/* global window, document, sessionStorage */
+/* global window, document, sessionStorage, fetch */
+import { TRELLO_APP_KEY, TRELLO_APP_NAME, TRELLO_APP_AUTHOR } from './config.js';
 
-// Initialize Trello Power-Up iframe interface
+// Initialize Trello Power-Up iframe interface with credentials
 var t = window.TrelloPowerUp && typeof window.TrelloPowerUp.iframe === 'function'
-  ? window.TrelloPowerUp.iframe()
+  ? window.TrelloPowerUp.iframe({
+      appKey: TRELLO_APP_KEY,
+      appName: TRELLO_APP_NAME,
+      appAuthor: TRELLO_APP_AUTHOR,
+    })
   : null;
 
 // Live checklist data structure
@@ -789,9 +794,66 @@ document.addEventListener('DOMContentLoaded', () => {
   // 5. Save & Get Next Steps Button handler
   const btnSaveChecklist = document.getElementById('btn-save-checklist');
   if (btnSaveChecklist) {
-    btnSaveChecklist.addEventListener('click', () => {
-      // TODO: write checklist to the actual Trello card via REST API (create checklist + items per category, or flatten into one checklist) — requires OAuth token
-      console.log('save checklist triggered', checklistData);
+    btnSaveChecklist.addEventListener('click', async () => {
+      btnSaveChecklist.disabled = true;
+      btnSaveChecklist.innerHTML = '<span>Saving checklists…</span>';
+
+      const isInsideTrello = window.self !== window.top && Boolean(t);
+
+      if (isInsideTrello) {
+        try {
+          const restApi = await t.getRestApi();
+          if (restApi) {
+            let isAuth = await restApi.isAuthorized();
+            if (!isAuth) {
+              try {
+                await restApi.authorize({ scope: 'read,write' });
+              } catch (authErr) {
+                console.warn('[Checklist Generator] Trello auth denied or failed:', authErr);
+              }
+              isAuth = await restApi.isAuthorized();
+            }
+
+            if (isAuth) {
+              const token = await restApi.getToken();
+              const card = await t.card('id');
+
+              if (card && card.id && Array.isArray(checklistData)) {
+                for (const category of checklistData) {
+                  const items = Array.isArray(category.items) ? category.items : [];
+                  if (items.length === 0) continue;
+
+                  // Create checklist on card via Trello REST API
+                  const createChecklistRes = await fetch(
+                    `https://api.trello.com/1/checklists?idCard=${card.id}&name=${encodeURIComponent(category.name)}&key=${TRELLO_APP_KEY}&token=${token}`,
+                    { method: 'POST' }
+                  );
+
+                  if (createChecklistRes.ok) {
+                    const checklistObj = await createChecklistRes.json();
+                    if (checklistObj && checklistObj.id) {
+                      for (const item of items) {
+                        await fetch(
+                          `https://api.trello.com/1/checklists/${checklistObj.id}/checkItems?name=${encodeURIComponent(item.text)}&checked=${Boolean(item.checked)}&key=${TRELLO_APP_KEY}&token=${token}`,
+                          { method: 'POST' }
+                        );
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[Checklist Generator] Error saving checklists to Trello:', err);
+        }
+      }
+
+      // Store in session storage fallback for standalone preview
+      try {
+        sessionStorage.setItem('trello_checklistData', JSON.stringify(checklistData));
+      } catch (e) {}
+
       const search = window.location.search || '';
       const targetUrl = (t && typeof t.signUrl === 'function')
         ? t.signUrl('./next-steps.html')
