@@ -1,13 +1,5 @@
-/* global window, document */
-
-// TODO: replace with real fetch from backend AI scoring endpoint once built
-const cardReadinessData = {
-  score: 54,
-  status: 'Needs Work',
-  statusColor: '#ea580c',
-  trackColor: '#fde8e8',
-  description: 'Missing critical information.',
-};
+/* global window, document, sessionStorage */
+import { getScoreColor, getScoreTrackColor, getScoreStatus, getScoreDescription } from './score-utils.js';
 
 // Initialize Trello Power-Up iframe interface
 const t = window.TrelloPowerUp && typeof window.TrelloPowerUp.iframe === 'function'
@@ -15,41 +7,11 @@ const t = window.TrelloPowerUp && typeof window.TrelloPowerUp.iframe === 'functi
   : null;
 
 /**
- * Determine theme colors based on score value
+ * Renders the card readiness score or empty state into the DOM
  */
-function getScoreColors(score, customStatusColor, customTrackColor) {
-  if (customStatusColor && customTrackColor) {
-    return { statusColor: customStatusColor, trackColor: customTrackColor };
-  }
-
-  if (score >= 80) {
-    return {
-      statusColor: '#16a34a', // green
-      trackColor: '#dcfce7',  // soft light green
-    };
-  } else if (score >= 60) {
-    return {
-      statusColor: '#d97706', // amber/orange
-      trackColor: '#fef3c7',  // soft light amber
-    };
-  } else {
-    return {
-      statusColor: customStatusColor || '#ea580c', // orange/coral
-      trackColor: customTrackColor || '#fde8e8',   // soft pink/cream
-    };
-  }
-}
-
-/**
- * Renders the readiness data into the DOM
- */
-function renderCardReadiness(data) {
-  const score = Math.max(0, Math.min(100, Number(data.score) || 0));
-  const colors = getScoreColors(score, data.statusColor, data.trackColor);
-
+export function renderSection(readiness) {
   const radius = 32;
   const circumference = 2 * Math.PI * radius; // ~201.06
-  const offset = circumference - (score / 100) * circumference;
 
   const progressCircle = document.getElementById('progress-circle');
   const trackCircle = document.getElementById('track-circle');
@@ -58,39 +20,69 @@ function renderCardReadiness(data) {
   const statusTitle = document.getElementById('status-title');
   const statusDescription = document.getElementById('status-description');
 
-  if (progressCircle) {
-    progressCircle.style.strokeDasharray = `${circumference}`;
-    progressCircle.style.strokeDashoffset = `${offset}`;
-    progressCircle.style.stroke = colors.statusColor;
-  }
+  if (readiness && typeof readiness.score === 'number') {
+    const score = Math.max(0, Math.min(100, Math.round(readiness.score)));
+    const scoreColor = getScoreColor(score);
+    const trackColor = getScoreTrackColor(score);
+    const status = getScoreStatus(score);
+    const description = getScoreDescription(score);
+    const offset = circumference - (score / 100) * circumference;
 
-  if (trackCircle) {
-    trackCircle.style.stroke = colors.trackColor;
-  }
-
-  if (scoreValue) {
-    scoreValue.textContent = `${score}%`;
-    scoreValue.style.color = colors.statusColor;
-  }
-
-  if (statusDot) {
-    statusDot.style.backgroundColor = colors.statusColor;
-  }
-
-  if (statusTitle) {
-    statusTitle.textContent = data.status;
-    statusTitle.style.color = colors.statusColor;
-  }
-
-  if (statusDescription) {
-    statusDescription.textContent = data.description;
+    if (progressCircle) {
+      progressCircle.style.strokeDasharray = `${circumference}`;
+      progressCircle.style.strokeDashoffset = `${offset.toFixed(2)}`;
+      progressCircle.style.stroke = scoreColor;
+      progressCircle.style.opacity = '1';
+    }
+    if (trackCircle) {
+      trackCircle.style.stroke = trackColor;
+    }
+    if (scoreValue) {
+      scoreValue.textContent = `${score}%`;
+      scoreValue.style.color = scoreColor;
+    }
+    if (statusDot) {
+      statusDot.style.backgroundColor = scoreColor;
+    }
+    if (statusTitle) {
+      statusTitle.textContent = status;
+      statusTitle.style.color = scoreColor;
+    }
+    if (statusDescription) {
+      statusDescription.textContent = description;
+    }
+  } else {
+    // Empty state: neutral gray ring track with no arc, "—" in center, gray dot with "Not analyzed yet", description "Run an analysis to see your score"
+    if (progressCircle) {
+      progressCircle.style.strokeDasharray = `${circumference}`;
+      progressCircle.style.strokeDashoffset = `${circumference.toFixed(2)}`;
+      progressCircle.style.stroke = 'transparent';
+      progressCircle.style.opacity = '0';
+    }
+    if (trackCircle) {
+      trackCircle.style.stroke = '#e2e8f0';
+    }
+    if (scoreValue) {
+      scoreValue.textContent = '—';
+      scoreValue.style.color = '#94a3b8';
+    }
+    if (statusDot) {
+      statusDot.style.backgroundColor = '#94a3b8';
+    }
+    if (statusTitle) {
+      statusTitle.textContent = 'Not analyzed yet';
+      statusTitle.style.color = '#64748b';
+    }
+    if (statusDescription) {
+      statusDescription.textContent = 'Run an analysis to see your score';
+    }
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Render initial card readiness
-  renderCardReadiness(cardReadinessData);
-
+/**
+ * Setup navigation and modal triggers
+ */
+function setupEventHandlers() {
   // Wire up "View Details" button click handler
   const btnViewDetails = document.getElementById('btn-view-details');
   if (btnViewDetails) {
@@ -112,7 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
           mouseEvent: event,
         });
       } else {
-        // Fallback when testing directly in a standalone browser tab
         console.log('[AI Assistant] Opening missing-info.html (standalone preview)');
         window.scrollTo(0, 0);
         window.location.href = './missing-info.html';
@@ -120,8 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Wire up Ring Eye Icon click handler
-  const ringOverlay = document.getElementById('ring-overlay');
+  // Wire up Ring Eye Icon and Wrapper click handler
   const handleScoreDetails = (event) => {
     if (window.self !== window.top && t && typeof t.modal === 'function') {
       return t.modal({
@@ -144,19 +134,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  const ringOverlay = document.getElementById('ring-overlay');
   if (ringOverlay) {
     ringOverlay.addEventListener('click', handleScoreDetails);
   }
 
-  // Also allow clicking the whole ring wrapper
   const ringWrapper = document.getElementById('ring-wrapper');
   if (ringWrapper) {
     ringWrapper.addEventListener('click', handleScoreDetails);
   }
+}
 
-  // Auto size iframe to content in Trello if supported
-  if (t && typeof t.sizeTo === 'function') {
-    const container = document.getElementById('section-container') || document.body;
-    t.sizeTo(container);
+// Subscribe to Trello render lifecycle
+if (t && typeof t.render === 'function') {
+  t.render(function () {
+    return t.get('card', 'shared', 'readiness').then(function (readiness) {
+      renderSection(readiness); // undefined/null if never analyzed
+      return t.sizeTo('body');
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  setupEventHandlers();
+
+  // If in standalone preview or before t.render runs
+  if (!t || typeof t.render !== 'function') {
+    let fallbackReadiness = null;
+    try {
+      const stored = sessionStorage.getItem('trello_readiness');
+      if (stored) fallbackReadiness = JSON.parse(stored);
+    } catch (e) {}
+    renderSection(fallbackReadiness);
   }
 });

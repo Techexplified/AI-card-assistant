@@ -10,8 +10,6 @@
         --color-primary: #5b4fe9;
         --color-primary-hover: #4d41db;
         --color-primary-active: #4135c7;
-        --color-status-orange: #ea580c;
-        --color-status-orange-light: #fde8e8;
         --color-text-main: #0f172a;
         --color-text-sub: #475569;
         --color-text-muted: #64748b;
@@ -74,18 +72,19 @@
 
       .track-circle {
         fill: transparent;
-        stroke: var(--color-status-orange-light);
+        stroke: #e2e8f0;
         stroke-width: 8;
+        transition: stroke 0.3s ease;
       }
 
       .progress-circle {
         fill: transparent;
-        stroke: var(--color-status-orange);
+        stroke: #94a3b8;
         stroke-width: 8;
         stroke-linecap: round;
         stroke-dasharray: 201.06;
-        stroke-dashoffset: 92.48; /* Default for 54% */
-        transition: stroke-dashoffset 0.4s ease, stroke 0.3s ease;
+        stroke-dashoffset: 201.06;
+        transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease, opacity 0.3s ease;
       }
 
       .ring-center-text {
@@ -102,7 +101,8 @@
         font-size: 17px;
         font-weight: 800;
         line-height: 1.1;
-        color: var(--color-status-orange);
+        color: #94a3b8;
+        transition: color 0.3s ease;
       }
 
       .score-label {
@@ -171,15 +171,17 @@
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background-color: var(--color-status-orange);
+        background-color: #94a3b8;
         flex-shrink: 0;
+        transition: background-color 0.3s ease;
       }
 
       .status-title {
         font-size: 15px;
         font-weight: 700;
-        color: var(--color-status-orange);
+        color: #64748b;
         line-height: 1.2;
+        transition: color 0.3s ease;
       }
 
       .status-description {
@@ -242,7 +244,7 @@
 
           <!-- Centered text -->
           <div class="ring-center-text">
-            <span class="score-value" id="score-value">54%</span>
+            <span class="score-value" id="score-value">—</span>
             <span class="score-label" id="score-label">Score</span>
           </div>
 
@@ -260,9 +262,9 @@
           <span class="status-meta-header">CURRENT STATUS</span>
           <div class="status-header">
             <span class="status-dot" id="status-dot"></span>
-            <span class="status-title" id="status-title">Needs Work</span>
+            <span class="status-title" id="status-title">Not analyzed yet</span>
           </div>
-          <p class="status-description" id="status-description">Missing critical information.</p>
+          <p class="status-description" id="status-description">Run an analysis to see your score</p>
         </div>
       </div>
 

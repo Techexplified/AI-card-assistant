@@ -1,15 +1,22 @@
-/* global window, document */
+/* global window, document, sessionStorage, fetch */
+import { TRELLO_APP_KEY, TRELLO_APP_NAME, TRELLO_APP_AUTHOR } from './config.js';
+import { getScoreColor, getScoreTrackColor, getScoreStatus } from './score-utils.js';
 
-// Initialize Trello Power-Up iframe interface
+// Initialize Trello Power-Up iframe interface with app credentials
 var t = window.TrelloPowerUp && typeof window.TrelloPowerUp.iframe === 'function'
-  ? window.TrelloPowerUp.iframe()
+  ? window.TrelloPowerUp.iframe({
+      appKey: TRELLO_APP_KEY,
+      appName: TRELLO_APP_NAME,
+      appAuthor: TRELLO_APP_AUTHOR,
+    })
   : null;
 
-// Track current card data and latest AI improvement result
+// Track current card data, latest AI improvement result, and save state
 let currentCardDescription = '';
 let currentCardName = 'Untitled';
 let latestAiData = null;
 let improvedColumnTemplate = '';
+let isSaving = false;
 
 const FALLBACK_DESCRIPTION =
   "We need to redesign the marketing website. It's not working well and users are complaining. Need to make it better and improve conversions somehow.\n\nShould look modern and work on mobile. Jane said stakeholders want it done soon. Maybe add new landing pages too? Not sure about timeline or who's doing it.";
@@ -62,6 +69,30 @@ function resizePopup() {
 }
 
 /**
+ * Display inline save error banner
+ */
+function showInlineSaveError(message) {
+  const errorEl = document.getElementById('save-inline-error');
+  const errorTextEl = document.getElementById('save-inline-error-text');
+  if (errorEl && errorTextEl) {
+    errorTextEl.textContent = message;
+    errorEl.style.display = 'flex';
+    resizePopup();
+  }
+}
+
+/**
+ * Hide inline save error banner
+ */
+function clearInlineSaveError() {
+  const errorEl = document.getElementById('save-inline-error');
+  if (errorEl) {
+    errorEl.style.display = 'none';
+    resizePopup();
+  }
+}
+
+/**
  * Update the original card description & word count
  */
 function updateOriginalCardView(descriptionText) {
@@ -87,7 +118,7 @@ async function fetchImprovements(description, cardName) {
   const response = await fetch('/api/improve-card', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ description, cardName })
+    body: JSON.stringify({ description, cardName }),
   });
 
   if (!response.ok) {
@@ -98,7 +129,6 @@ async function fetchImprovements(description, cardName) {
         errorMessage = errData.details ? `${errData.error} (${errData.details})` : errData.error;
       }
     } catch (e) {
-      // If 404 when testing on plain vite without vercel dev
       if (response.status === 404) {
         errorMessage = 'Endpoint /api/improve-card not found. When testing locally, run with Vercel CLI (vercel dev) or deploy to Vercel.';
       }
@@ -113,6 +143,8 @@ async function fetchImprovements(description, cardName) {
  * Display loading state in the AI Improved column and related widgets
  */
 function showLoadingState() {
+  clearInlineSaveError();
+
   // 1. Disable Save & Generate Checklist button
   const btnSaveChecklist = document.getElementById('btn-save-checklist');
   if (btnSaveChecklist) {
@@ -284,18 +316,27 @@ function renderAiImprovements(data) {
   // 3. Current score
   const currentScoreDonutText = document.getElementById('current-score-donut-text');
   const currentScoreStatus = document.getElementById('current-score-status-text');
-  const currentScoreTrack = document.querySelector('.score-box-current .mini-donut-fill-red');
+  const currentScoreTrack = document.querySelector('.score-box-current .mini-donut-fill-red') || document.querySelector('.score-box-current circle:last-child');
   if (data.currentScore) {
-    const curVal = typeof data.currentScore.value === 'number' ? data.currentScore.value : 50;
+    const curVal = typeof data.currentScore.value === 'number' ? Math.max(0, Math.min(100, data.currentScore.value)) : 50;
+    const curColor = getScoreColor(curVal);
+    const curStatus = data.currentScore.status || getScoreStatus(curVal);
+
     if (currentScoreDonutText) {
       currentScoreDonutText.textContent = `${curVal}%`;
+      currentScoreDonutText.style.color = curColor;
     }
     if (currentScoreStatus) {
-      currentScoreStatus.textContent = data.currentScore.status || 'Needs Work';
+      currentScoreStatus.textContent = curStatus;
+      currentScoreStatus.style.color = curColor;
+      currentScoreStatus.className = 'score-status-text';
     }
     if (currentScoreTrack) {
-      const offset = 100.53 - (100.53 * Math.min(100, Math.max(0, curVal)) / 100);
+      const circumference = 100.53;
+      const offset = circumference - (circumference * curVal / 100);
+      currentScoreTrack.style.strokeDasharray = `${circumference}`;
       currentScoreTrack.style.strokeDashoffset = offset.toFixed(2);
+      currentScoreTrack.style.stroke = curColor;
     }
   }
 
@@ -354,24 +395,45 @@ function renderAiImprovements(data) {
   const newScoreStatus = document.getElementById('new-score-status-text');
   const improvementPill = document.getElementById('new-score-improvement-pill');
   const newScoreTrack = document.getElementById('new-score-donut-fill') || document.querySelector('.score-box-new .mini-donut-fill-green');
+  const newScoreBox = document.getElementById('score-box-new') || document.querySelector('.score-box-new');
 
   if (data.newScore) {
     const curVal = typeof data.currentScore?.value === 'number' ? data.currentScore.value : 50;
-    const improvement = typeof data.newScore.improvementPercent === 'number' ? data.newScore.improvementPercent : 38;
-    const newVal = typeof data.newScore.value === 'number' ? data.newScore.value : Math.min(100, Math.max(0, curVal + improvement));
+    const newVal = typeof data.newScore.value === 'number'
+      ? Math.max(0, Math.min(100, data.newScore.value))
+      : (typeof data.newScore.improvementPercent === 'number' ? Math.min(100, curVal + data.newScore.improvementPercent) : 85);
+    const improvement = typeof data.newScore.improvementPercent === 'number'
+      ? data.newScore.improvementPercent
+      : Math.max(0, newVal - curVal);
+
+    const scoreColor = getScoreColor(newVal);
+    const trackColor = getScoreTrackColor(newVal);
+    const statusText = data.newScore.status || getScoreStatus(newVal);
 
     if (newScoreDonutText) {
       newScoreDonutText.textContent = `${newVal}%`;
+      newScoreDonutText.style.color = scoreColor;
     }
     if (newScoreStatus) {
-      newScoreStatus.textContent = data.newScore.status || 'Ready to Execute';
+      newScoreStatus.textContent = statusText;
+      newScoreStatus.style.color = scoreColor;
+      newScoreStatus.className = 'score-status-text';
     }
     if (improvementPill) {
       improvementPill.textContent = `↗ +${improvement}% improvement`;
+      improvementPill.style.backgroundColor = trackColor;
+      improvementPill.style.color = scoreColor;
     }
     if (newScoreTrack) {
-      const offset = 100.53 - (100.53 * Math.min(100, Math.max(0, newVal)) / 100);
+      const circumference = 100.53;
+      const offset = circumference - (circumference * newVal / 100);
+      newScoreTrack.style.strokeDasharray = `${circumference}`;
       newScoreTrack.style.strokeDashoffset = offset.toFixed(2);
+      newScoreTrack.style.stroke = scoreColor;
+    }
+    if (newScoreBox) {
+      newScoreBox.style.borderColor = scoreColor;
+      newScoreBox.style.backgroundColor = trackColor;
     }
   }
 
@@ -390,6 +452,14 @@ function renderAiImprovements(data) {
     btnSaveChecklist.disabled = false;
     btnSaveChecklist.style.opacity = '1';
     btnSaveChecklist.style.cursor = 'pointer';
+    btnSaveChecklist.innerHTML = `
+      <svg viewBox="0 0 24 24">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+      </svg>
+      <span>Save &amp; Generate Checklist</span>
+    `;
   }
 
   const btnRegenerate = document.getElementById('btn-regenerate');
@@ -457,7 +527,7 @@ function initCardData() {
     // Fetch live card & list data from Trello with 3.5s timeout
     const fetchTrelloData = Promise.all([
       t.card('all'),
-      typeof t.list === 'function' ? t.list('all') : Promise.resolve(null)
+      typeof t.list === 'function' ? t.list('all') : Promise.resolve(null),
     ]);
 
     const timeoutPromise = new Promise((_, reject) => {
@@ -505,6 +575,26 @@ function initCardData() {
     updateOriginalCardView(currentCardDescription);
     loadAiImprovements(currentCardDescription, currentCardName);
   }
+}
+
+/**
+ * Reset Save button UI state
+ */
+function resetSaveButton(btn) {
+  if (btn) {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+    btn.innerHTML = `
+      <svg viewBox="0 0 24 24">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+      </svg>
+      <span>Save &amp; Generate Checklist</span>
+    `;
+  }
+  isSaving = false;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -570,31 +660,139 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSaveChecklist = document.getElementById('btn-save-checklist');
   if (btnSaveChecklist) {
     btnSaveChecklist.addEventListener('click', async () => {
-      console.log('save triggered with latest AI data:', latestAiData);
+      // Guard against double-clicks
+      if (isSaving) return;
+      isSaving = true;
 
-      if (latestAiData) {
-        if (t && typeof t.set === 'function') {
-          try {
-            await t.set('card', 'shared', 'improvementData', {
-              objective: latestAiData.objective,
-              keyTasks: latestAiData.keyTasks,
-              definitionOfDone: latestAiData.definitionOfDone
-            });
-          } catch (e) {
-            console.warn('[Improve Card] Could not persist improvementData to Trello:', e);
+      clearInlineSaveError();
+      btnSaveChecklist.disabled = true;
+      btnSaveChecklist.style.opacity = '0.7';
+      btnSaveChecklist.innerHTML = '<span>Saving…</span>';
+
+      if (!latestAiData) {
+        showInlineSaveError('No improvement data available to save');
+        resetSaveButton(btnSaveChecklist);
+        return;
+      }
+
+      const objective = latestAiData.objective || '';
+      const keyTasks = Array.isArray(latestAiData.keyTasks) ? latestAiData.keyTasks : [];
+      const definitionOfDone = Array.isArray(latestAiData.definitionOfDone) ? latestAiData.definitionOfDone : [];
+
+      // Build the new description markdown
+      const tasksMd = keyTasks.map((task) => `- ${task}`).join('\n');
+      const dodMd = definitionOfDone.map((criterion) => `- ${criterion}`).join('\n');
+      const newDesc = `## Objective\n${objective}\n\n## Key Tasks\n${tasksMd}\n\n## Definition of Done\n${dodMd}`;
+
+      const isInsideTrello = window.self !== window.top && Boolean(t);
+
+      if (isInsideTrello) {
+        try {
+          const restApi = await t.getRestApi();
+          if (!restApi) {
+            throw new Error('Trello REST API unavailable');
           }
+
+          const isAuth = await restApi.isAuthorized();
+          if (!isAuth) {
+            try {
+              await restApi.authorize({ scope: 'read,write' });
+            } catch (authErr) {
+              console.warn('[Improve Card] Trello Auth denied or failed:', authErr);
+              showInlineSaveError('Trello access is needed to update the description');
+              resetSaveButton(btnSaveChecklist);
+              return;
+            }
+          }
+
+          const isNowAuth = await restApi.isAuthorized();
+          if (!isNowAuth) {
+            showInlineSaveError('Trello access is needed to update the description');
+            resetSaveButton(btnSaveChecklist);
+            return;
+          }
+
+          const token = await restApi.getToken();
+          const card = await t.card('id', 'desc');
+
+          if (!card || !card.id) {
+            throw new Error('Could not retrieve card ID from Trello');
+          }
+
+          // Back up the original description only if not already stored
+          const existingBackup = await t.get('card', 'shared', 'originalDescription');
+          if (existingBackup === undefined || existingBackup === null) {
+            await t.set('card', 'shared', 'originalDescription', card.desc || '');
+          }
+
+          // PUT updated description to Trello REST API
+          const putUrl = `https://api.trello.com/1/cards/${card.id}?key=${TRELLO_APP_KEY}&token=${token}`;
+          const response = await fetch(putUrl, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ desc: newDesc }),
+          });
+
+          if (!response.ok) {
+            let errorText = `HTTP ${response.status}`;
+            try {
+              const errBody = await response.json();
+              if (errBody && errBody.message) errorText = errBody.message;
+            } catch (e) {}
+            showInlineSaveError(`Failed to update card: ${errorText}`);
+            resetSaveButton(btnSaveChecklist);
+            return; // Score must NOT update on failure
+          }
+
+          // On success, store the score and status
+          const newScoreValue = typeof latestAiData.newScore?.value === 'number'
+            ? latestAiData.newScore.value
+            : 85;
+          const newScoreStatus = latestAiData.newScore?.status || getScoreStatus(newScoreValue);
+
+          await t.set('card', 'shared', 'readiness', {
+            score: newScoreValue,
+            status: newScoreStatus,
+            updatedAt: Date.now(),
+          });
+
+          // Store the checklist handoff
+          await t.set('card', 'shared', 'improvementData', {
+            objective,
+            keyTasks,
+            definitionOfDone,
+          });
+        } catch (err) {
+          console.error('[Improve Card] Save error:', err);
+          showInlineSaveError(err.message || 'Trello access is needed to update the description');
+          resetSaveButton(btnSaveChecklist);
+          return;
         }
+      } else {
         // Fallback for standalone preview / browser testing without Trello iframe parent
         try {
+          const newScoreValue = typeof latestAiData.newScore?.value === 'number'
+            ? latestAiData.newScore.value
+            : 85;
+          const newScoreStatus = latestAiData.newScore?.status || getScoreStatus(newScoreValue);
+
+          sessionStorage.setItem('trello_readiness', JSON.stringify({
+            score: newScoreValue,
+            status: newScoreStatus,
+            updatedAt: Date.now(),
+          }));
+
           sessionStorage.setItem('trello_improvementData', JSON.stringify({
-            objective: latestAiData.objective,
-            keyTasks: latestAiData.keyTasks,
-            definitionOfDone: latestAiData.definitionOfDone
+            objective,
+            keyTasks,
+            definitionOfDone,
           }));
         } catch (e) {}
       }
 
-      // TODO: write rewritten description back to the actual Trello card via REST API — requires OAuth token
+      // Open the Smart Checklist Generator popup as already wired
       const search = window.location.search || '';
       const targetUrl = (t && typeof t.signUrl === 'function')
         ? t.signUrl('./checklist-generator.html')

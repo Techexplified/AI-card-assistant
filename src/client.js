@@ -1,40 +1,48 @@
 /* global window */
+import { TRELLO_APP_KEY, TRELLO_APP_NAME, TRELLO_APP_AUTHOR } from './config.js';
 
-window.TrelloPowerUp.initialize({
-  'card-badges': function (t, options) {
-    return [
-      {
-        text: 'Hello',
-        color: 'green',
-      },
-    ];
-  },
-  'board-buttons': function (t, options) {
-    return [
-      {
-        icon: {
-          dark: 'https://cdn.glitch.com/1b42d7de-6e4f-499f-9762-3c583d7f6fa5%2Ficon-dark.png?1504104006241',
-          light: 'https://cdn.glitch.com/1b42d7de-6e4f-499f-9762-3c583d7f6fa5%2Ficon-light.png?1504104006326',
+window.TrelloPowerUp.initialize(
+  {
+    'card-badges': function (t, options) {
+      return [
+        {
+          text: 'Hello',
+          color: 'green',
         },
-        text: 'Test Button',
-        callback: function (t) {
-          return t.alert({
-            message: 'Hello from your Trello Power-Up!',
-            duration: 5,
-          });
+      ];
+    },
+    'board-buttons': function (t, options) {
+      return [
+        {
+          icon: {
+            dark: 'https://cdn.glitch.com/1b42d7de-6e4f-499f-9762-3c583d7f6fa5%2Ficon-dark.png?1504104006241',
+            light: 'https://cdn.glitch.com/1b42d7de-6e4f-499f-9762-3c583d7f6fa5%2Ficon-light.png?1504104006326',
+          },
+          text: 'Test Button',
+          callback: function (t) {
+            return t.alert({
+              message: 'Hello from your Trello Power-Up!',
+              duration: 5,
+            });
+          },
         },
-      },
-    ];
+      ];
+    },
+    'card-back-section': function (t, options) {
+      return {
+        title: 'AI Assistant',
+        icon: 'https://cdn.glitch.com/1b42d7de-6e4f-499f-9762-3c583d7f6fa5%2Ficon-dark.png?1504104006241',
+        content: {
+          type: 'iframe',
+          url: t.signUrl('./section.html'),
+          height: 220,
+        },
+      };
+    },
   },
-  'card-back-section': function (t, options) {
-    return {
-      title: 'AI Assistant',
-      icon: 'https://cdn.glitch.com/1b42d7de-6e4f-499f-9762-3c583d7f6fa5%2Ficon-dark.png?1504104006241',
-      content: {
-        type: 'iframe',
-        url: t.signUrl('./section.html'),
-        height: 220,
-      },
-    };
-  },
-});
+  {
+    appKey: TRELLO_APP_KEY,
+    appName: TRELLO_APP_NAME,
+    appAuthor: TRELLO_APP_AUTHOR,
+  }
+);

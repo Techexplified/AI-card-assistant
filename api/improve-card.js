@@ -27,7 +27,7 @@ Analyze this description and respond with ONLY a valid JSON object matching exac
   "objective": "<one rewritten paragraph stating a clear, measurable objective>",
   "keyTasks": ["task 1", "task 2", ...],
   "definitionOfDone": ["criterion 1", "criterion 2", ...],
-  "newScore": { "status": "<one of: Needs Work, Almost Ready, Ready to Execute>", "improvementPercent": <integer, how much better the rewritten version is> }
+  "newScore": { "value": <0-100 integer, how complete/clear the REWRITTEN version is>, "status": "<one of: Needs Work, Almost Ready, Ready>", "improvementPercent": <integer> }
 }
 
 Rules:
@@ -35,6 +35,7 @@ Rules:
 - keyTasks: 3-6 concrete, actionable tasks derived from the objective
 - definitionOfDone: 3-5 concrete, verifiable completion criteria
 - currentScore.value should reflect how complete/clear the ORIGINAL description is
+- newScore.value must be greater than currentScore.value
 - Keep all text concise and professional`;
 
   try {

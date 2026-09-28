@@ -514,16 +514,18 @@
         stroke-width: 4;
         stroke-linecap: round;
         stroke-dasharray: 100.53;
-        stroke-dashoffset: 46.24; /* 54% */
+        stroke-dashoffset: 100.53;
+        transition: stroke-dashoffset 0.4s ease, stroke 0.3s ease;
       }
 
       .mini-donut-fill-green {
         fill: transparent;
-        stroke: #0d9488;
+        stroke: var(--color-green);
         stroke-width: 4;
         stroke-linecap: round;
         stroke-dasharray: 100.53;
-        stroke-dashoffset: 8.04; /* 92% */
+        stroke-dashoffset: 100.53;
+        transition: stroke-dashoffset 0.4s ease, stroke 0.3s ease;
       }
 
       .mini-donut-text {
@@ -983,11 +985,11 @@
                   <circle class="mini-donut-track" cx="19" cy="19" r="16"></circle>
                   <circle class="mini-donut-fill-red" cx="19" cy="19" r="16"></circle>
                 </svg>
-                <span class="mini-donut-text" id="current-score-donut-text">54%</span>
+                <span class="mini-donut-text" id="current-score-donut-text">--%</span>
               </div>
               <div class="score-text-group">
                 <span class="score-label">Current Score</span>
-                <span class="score-status-text red" id="current-score-status-text">Needs Work</span>
+                <span class="score-status-text" id="current-score-status-text">Calculating...</span>
               </div>
             </div>
             <div class="btn-score-chevron">
@@ -1064,24 +1066,34 @@
           </div>
 
           <!-- 4. New Score Box -->
-          <div class="score-box-new">
+          <div class="score-box-new" id="score-box-new">
             <div class="score-box-left">
               <div class="mini-donut-wrapper">
                 <svg class="mini-donut-svg" viewBox="0 0 38 38">
                   <circle class="mini-donut-track" cx="19" cy="19" r="16"></circle>
                   <circle class="mini-donut-fill-green" id="new-score-donut-fill" cx="19" cy="19" r="16"></circle>
                 </svg>
-                <span class="mini-donut-text" id="new-score-donut-text">92%</span>
+                <span class="mini-donut-text" id="new-score-donut-text">--%</span>
               </div>
               <div class="score-text-group">
                 <span class="score-label">New Score</span>
-                <span class="score-status-text green" id="new-score-status-text">Ready to Execute</span>
+                <span class="score-status-text" id="new-score-status-text">--</span>
               </div>
             </div>
-            <span class="pill-improvement" id="new-score-improvement-pill">↗ +38% improvement</span>
+            <span class="pill-improvement" id="new-score-improvement-pill"></span>
           </div>
         </div>
       </main>
+
+      <!-- Inline Save Error Banner -->
+      <div id="save-inline-error" style="display: none; background-color: #fef2f2; border: 1px solid #fee2e2; color: #b91c1c; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; align-items: center; gap: 6px;">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="save-inline-error-text">Trello access is needed to update the description</span>
+      </div>
 
       <!-- 4. Footer Row -->
       <footer class="footer-row">
