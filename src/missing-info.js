@@ -87,9 +87,9 @@ function showLoadingState() {
 
 /**
  * Create DOM element for a single item card
- * - If filled: green theme (light green background/border, green icon square, "● Complete" pill, filledDescription, no hint/button)
- * - If missing critical: red theme, missingDescription, hint, and action button
- * - If missing optional: orange theme, missingDescription, hint, and action button
+ * - If filled: green theme (light green background/border, green icon square, "● Complete" pill, filledDescription)
+ * - If missing critical: red theme, missingDescription, and hint
+ * - If missing optional: orange theme, missingDescription, and hint
  */
 function createItemCard(item, category) {
   const card = document.createElement('div');
@@ -115,7 +115,6 @@ function createItemCard(item, category) {
     card.className = 'item-card';
     const badgeClass = isCritical ? 'critical' : 'optional';
     const badgeText = isCritical ? '● Missing' : '● Optional';
-    const actionLabel = item.actionLabel || (isCritical ? 'Fix' : 'Add');
 
     card.innerHTML = `
       <div class="item-top">
@@ -130,22 +129,12 @@ function createItemCard(item, category) {
         </div>
         <span class="item-badge-pill ${badgeClass}">${badgeText}</span>
       </div>
+      ${item.hint ? `
       <div class="item-bottom">
-        <span class="item-hint">${item.hint || ''}</span>
-        <button class="btn-item-action ${badgeClass}" data-action="${item.actionType || ''}">
-          ${actionLabel}
-        </button>
+        <span class="item-hint">${item.hint}</span>
       </div>
+      ` : ''}
     `;
-
-    // Attach click listener to action button
-    const actionBtn = card.querySelector('.btn-item-action');
-    if (actionBtn) {
-      actionBtn.addEventListener('click', () => {
-        // TODO: wire to real Trello REST API write-back (requires OAuth token) once backend is built
-        console.log('action triggered:', item.actionType);
-      });
-    }
   }
 
   return card;

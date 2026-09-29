@@ -27,9 +27,7 @@ export function analyzeCard(card) {
       filled: members.length > 0,
       filledDescription: `Assigned to ${members.map(m => m.fullName || m.username || 'Member').join(', ')}`,
       missingDescription: 'No one is assigned to this card',
-      hint: 'Assign a member to own this card',
-      actionLabel: 'Assign',
-      actionType: 'assign-member'
+      hint: 'Assign a member to own this card'
     },
     {
       id: 'due-date',
@@ -37,9 +35,7 @@ export function analyzeCard(card) {
       filled: due !== null,
       filledDescription: due ? `Due ${new Date(due).toLocaleDateString()}` : '',
       missingDescription: 'No due date has been set',
-      hint: 'Set a deadline to track timelines',
-      actionLabel: 'Set Date',
-      actionType: 'set-due-date'
+      hint: 'Set a deadline to track timelines'
     },
     {
       id: 'requirements',
@@ -47,9 +43,7 @@ export function analyzeCard(card) {
       filled: hasSection('Key Tasks') || desc.trim().split(/\s+/).filter(Boolean).length > 15,
       filledDescription: 'Requirements are defined',
       missingDescription: 'No clear requirements defined',
-      hint: 'Add clear scope and requirements',
-      actionLabel: 'Add',
-      actionType: 'add-requirements'
+      hint: 'Add clear scope and requirements'
     },
     {
       id: 'definition-of-done',
@@ -57,9 +51,7 @@ export function analyzeCard(card) {
       filled: hasSection('Definition of Done'),
       filledDescription: 'Completion criteria defined',
       missingDescription: 'Completion criteria not defined',
-      hint: "Define what 'done' looks like",
-      actionLabel: 'Define',
-      actionType: 'define-dod'
+      hint: "Define what 'done' looks like"
     }
   ];
 
@@ -70,9 +62,7 @@ export function analyzeCard(card) {
       filled: attachments.length > 0,
       filledDescription: `${attachments.length} file${attachments.length === 1 ? '' : 's'} attached`,
       missingDescription: 'No files or links attached',
-      hint: 'Attach mockups, briefs or reference files',
-      actionLabel: 'Attach',
-      actionType: 'add-attachment'
+      hint: 'Attach mockups, briefs or reference files'
     },
     {
       id: 'priority-label',
@@ -80,9 +70,7 @@ export function analyzeCard(card) {
       filled: labels.length > 0,
       filledDescription: `${labels.length} label${labels.length === 1 ? '' : 's'} applied`,
       missingDescription: 'No priority label applied to card',
-      hint: 'Add a label to categorize this card',
-      actionLabel: 'Label',
-      actionType: 'add-label'
+      hint: 'Add a label to categorize this card'
     }
   ];
 
