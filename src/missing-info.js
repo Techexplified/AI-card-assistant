@@ -1,74 +1,26 @@
 /* global window, document */
+import { TRELLO_APP_KEY, TRELLO_APP_NAME, TRELLO_APP_AUTHOR } from './config.js';
+import { analyzeCard } from './card-analysis.js';
 
-// Initialize Trello Power-Up iframe interface
+// Initialize Trello Power-Up iframe interface with app credentials
 var t = window.TrelloPowerUp && typeof window.TrelloPowerUp.iframe === 'function'
-  ? window.TrelloPowerUp.iframe()
+  ? window.TrelloPowerUp.iframe({
+      appKey: TRELLO_APP_KEY,
+      appName: TRELLO_APP_NAME,
+      appAuthor: TRELLO_APP_AUTHOR,
+    })
   : null;
 
-// TODO: replace with real fetch from backend AI scoring endpoint once built
-const missingInfoData = {
-  cardCompleteness: 54,
-  missingCount: 4,
-  optionalCount: 2,
-  critical: [
-    {
-      id: 'assignee',
-      title: 'Assignee',
-      description: 'No one is assigned to this card',
-      hint: 'Assign a member to own this card',
-      actionLabel: 'Assign',
-      actionIcon: '👤',
-      actionType: 'assign-member',
-    },
-    {
-      id: 'due-date',
-      title: 'Due Date',
-      description: 'No due date has been set',
-      hint: 'Set a deadline to track timelines',
-      actionLabel: 'Set Date',
-      actionIcon: '📅',
-      actionType: 'set-due-date',
-    },
-    {
-      id: 'requirements',
-      title: 'Requirements',
-      description: 'No clear requirements defined',
-      hint: 'Add clear scope and requirements',
-      actionLabel: 'Add',
-      actionIcon: '✏️',
-      actionType: 'add-requirements',
-    },
-    {
-      id: 'definition-of-done',
-      title: 'Definition of Done',
-      description: 'Completion criteria not defined',
-      hint: "Define what 'done' looks like",
-      actionLabel: 'Define',
-      actionIcon: '✏️',
-      actionType: 'define-dod',
-    },
-  ],
-  optional: [
-    {
-      id: 'attachments',
-      title: 'Attachments',
-      description: 'No files or links attached',
-      hint: 'Attach mockups, briefs or reference files',
-      actionLabel: 'Attach',
-      actionIcon: '📎',
-      actionType: 'add-attachment',
-    },
-    {
-      id: 'priority-label',
-      title: 'Priority Label',
-      description: 'No priority label applied to card',
-      hint: 'Add a label to categorize this card',
-      actionLabel: 'Label',
-      actionIcon: '🏷️',
-      actionType: 'add-label',
-    },
-  ],
+// Fallback card data for standalone browser testing or bridge timeout
+const FALLBACK_CARD = {
+  name: 'Website Redesign',
+  desc: "We need to redesign the marketing website. It's not working well and users are complaining. Need to make it better and improve conversions somehow.",
+  members: [],
+  due: null,
+  attachments: [],
+  labels: [],
 };
+const FALLBACK_LIST_NAME = 'In Progress';
 
 /**
  * Get an SVG icon string for an item id
@@ -93,70 +45,132 @@ function getItemSvgIcon(id) {
 }
 
 /**
- * Create DOM element for a single missing info card
+ * Resize Trello iframe to content height
+ */
+function resizePopup() {
+  if (t && typeof t.sizeTo === 'function') {
+    const popupContainer = document.getElementById('popup-container') || document.body;
+    try {
+      t.sizeTo(popupContainer);
+    } catch (e) {
+      console.warn('[Missing Info Detector] t.sizeTo error:', e);
+    }
+  }
+}
+
+/**
+ * Show a brief loading state while card heuristics are analyzed
+ */
+function showLoadingState() {
+  const percentageEl = document.getElementById('summary-percentage');
+  const progressFillEl = document.getElementById('progress-bar-fill');
+  const missingPillEl = document.getElementById('pill-missing-count');
+  const optionalPillEl = document.getElementById('pill-optional-count');
+
+  if (percentageEl) percentageEl.textContent = '--%';
+  if (progressFillEl) progressFillEl.style.width = '0%';
+  if (missingPillEl) missingPillEl.textContent = '● Scanning...';
+  if (optionalPillEl) optionalPillEl.textContent = '● Scanning...';
+
+  const criticalList = document.getElementById('critical-items-list');
+  if (criticalList) {
+    criticalList.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--color-text-muted); font-size: 12px;">Scanning card items...</div>';
+  }
+
+  const optionalList = document.getElementById('optional-items-list');
+  if (optionalList) {
+    optionalList.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--color-text-muted); font-size: 12px;">Scanning card items...</div>';
+  }
+
+  resizePopup();
+}
+
+/**
+ * Create DOM element for a single item card
+ * - If filled: green theme (light green background/border, green icon square, "● Complete" pill, filledDescription, no hint/button)
+ * - If missing critical: red theme, missingDescription, hint, and action button
+ * - If missing optional: orange theme, missingDescription, hint, and action button
  */
 function createItemCard(item, category) {
   const card = document.createElement('div');
-  card.className = 'item-card';
-
   const isCritical = category === 'critical';
-  const badgeClass = isCritical ? 'critical' : 'optional';
-  const badgeText = isCritical ? '● Missing' : '● Optional';
-  const actionIcon = item.actionIcon ? `${item.actionIcon} ` : '';
 
-  card.innerHTML = `
-    <div class="item-top">
-      <div class="item-left">
-        <div class="item-icon-box ${badgeClass}">
-          ${getItemSvgIcon(item.id)}
+  if (item.filled) {
+    card.className = 'item-card filled';
+    card.innerHTML = `
+      <div class="item-top">
+        <div class="item-left">
+          <div class="item-icon-box complete">
+            ${getItemSvgIcon(item.id)}
+          </div>
+          <div class="item-title-group">
+            <span class="item-title">${item.title}</span>
+            <span class="item-description">${item.filledDescription || ''}</span>
+          </div>
         </div>
-        <div class="item-title-group">
-          <span class="item-title">${item.title}</span>
-          <span class="item-description">${item.description}</span>
-        </div>
+        <span class="item-badge-pill complete">● Complete</span>
       </div>
-      <span class="item-badge-pill ${badgeClass}">${badgeText}</span>
-    </div>
-    <div class="item-bottom">
-      <span class="item-hint">${item.hint}</span>
-      <button class="btn-item-action ${badgeClass}" data-action="${item.actionType}">
-        ${actionIcon}${item.actionLabel}
-      </button>
-    </div>
-  `;
+    `;
+  } else {
+    card.className = 'item-card';
+    const badgeClass = isCritical ? 'critical' : 'optional';
+    const badgeText = isCritical ? '● Missing' : '● Optional';
+    const actionLabel = item.actionLabel || (isCritical ? 'Fix' : 'Add');
 
-  // Attach click listener to action button
-  const actionBtn = card.querySelector('.btn-item-action');
-  if (actionBtn) {
-    actionBtn.addEventListener('click', () => {
-      // TODO: wire to real Trello REST API write-back (requires OAuth token) once backend is built
-      console.log('action triggered:', item.actionType);
-    });
+    card.innerHTML = `
+      <div class="item-top">
+        <div class="item-left">
+          <div class="item-icon-box ${badgeClass}">
+            ${getItemSvgIcon(item.id)}
+          </div>
+          <div class="item-title-group">
+            <span class="item-title">${item.title}</span>
+            <span class="item-description">${item.missingDescription || ''}</span>
+          </div>
+        </div>
+        <span class="item-badge-pill ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="item-bottom">
+        <span class="item-hint">${item.hint || ''}</span>
+        <button class="btn-item-action ${badgeClass}" data-action="${item.actionType || ''}">
+          ${actionLabel}
+        </button>
+      </div>
+    `;
+
+    // Attach click listener to action button
+    const actionBtn = card.querySelector('.btn-item-action');
+    if (actionBtn) {
+      actionBtn.addEventListener('click', () => {
+        // TODO: wire to real Trello REST API write-back (requires OAuth token) once backend is built
+        console.log('action triggered:', item.actionType);
+      });
+    }
   }
 
   return card;
 }
 
 /**
- * Render all components from missingInfoData
+ * Render all components from analyzed card data
  */
-function renderMissingInfo(data) {
+function renderMissingInfo(analysis) {
   // 1. Summary Card
   const percentageEl = document.getElementById('summary-percentage');
   const progressFillEl = document.getElementById('progress-bar-fill');
   const missingPillEl = document.getElementById('pill-missing-count');
   const optionalPillEl = document.getElementById('pill-optional-count');
 
-  if (percentageEl) percentageEl.textContent = `${data.cardCompleteness}%`;
-  if (progressFillEl) progressFillEl.style.width = `${data.cardCompleteness}%`;
-  if (missingPillEl) missingPillEl.textContent = `● ${data.missingCount} Missing`;
-  if (optionalPillEl) optionalPillEl.textContent = `● ${data.optionalCount} Optional`;
+  if (percentageEl) percentageEl.textContent = `${analysis.completeness}%`;
+  if (progressFillEl) progressFillEl.style.width = `${analysis.completeness}%`;
+  if (missingPillEl) missingPillEl.textContent = `● ${analysis.missingCount} Missing`;
+  if (optionalPillEl) optionalPillEl.textContent = `● ${analysis.optionalMissingCount} Optional`;
 
   // 2. Critical Items
   const criticalList = document.getElementById('critical-items-list');
   if (criticalList) {
     criticalList.innerHTML = '';
-    (data.critical || []).forEach((item) => {
+    (analysis.critical || []).forEach((item) => {
       criticalList.appendChild(createItemCard(item, 'critical'));
     });
   }
@@ -165,30 +179,34 @@ function renderMissingInfo(data) {
   const optionalList = document.getElementById('optional-items-list');
   if (optionalList) {
     optionalList.innerHTML = '';
-    (data.optional || []).forEach((item) => {
+    (analysis.optional || []).forEach((item) => {
       optionalList.appendChild(createItemCard(item, 'optional'));
     });
   }
+
+  resizePopup();
 }
 
 /**
- * Fetch live card & list metadata from Trello with a safe fallback
+ * Fetch live card & list metadata from Trello and run analysis
  */
-function initCardData() {
+function initMissingInfo() {
   const isInsideTrello = window.self !== window.top && Boolean(t);
+
+  showLoadingState();
 
   if (isInsideTrello && typeof t.card === 'function') {
     const fetchTrelloData = Promise.all([
-      t.card('name'),
-      typeof t.list === 'function' ? t.list('name') : Promise.resolve(null)
+      t.card('members', 'due', 'attachments', 'labels', 'desc', 'name'),
+      typeof t.list === 'function' ? t.list('name') : Promise.resolve(null),
     ]);
 
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Trello bridge timed out')), 1500);
+      setTimeout(() => reject(new Error('Trello bridge timed out')), 2500);
     });
 
     Promise.race([fetchTrelloData, timeoutPromise])
-      .then(function ([card, list]) {
+      .then(([card, list]) => {
         if (card && card.name) {
           const cardNameEl = document.getElementById('breadcrumb-card-name');
           if (cardNameEl) cardNameEl.textContent = card.name;
@@ -197,10 +215,29 @@ function initCardData() {
           const listNameEl = document.getElementById('breadcrumb-list-name');
           if (listNameEl) listNameEl.textContent = list.name;
         }
+
+        const analysis = analyzeCard(card || FALLBACK_CARD);
+        renderMissingInfo(analysis);
       })
-      .catch(function (err) {
-        console.warn('[Missing Info Detector] Using fallback breadcrumb info:', err);
+      .catch((err) => {
+        console.warn('[Missing Info Detector] Using fallback card data:', err);
+        const cardNameEl = document.getElementById('breadcrumb-card-name');
+        if (cardNameEl) cardNameEl.textContent = FALLBACK_CARD.name;
+        const listNameEl = document.getElementById('breadcrumb-list-name');
+        if (listNameEl) listNameEl.textContent = FALLBACK_LIST_NAME;
+
+        const analysis = analyzeCard(FALLBACK_CARD);
+        renderMissingInfo(analysis);
       });
+  } else {
+    // Standalone browser preview
+    const cardNameEl = document.getElementById('breadcrumb-card-name');
+    if (cardNameEl) cardNameEl.textContent = FALLBACK_CARD.name;
+    const listNameEl = document.getElementById('breadcrumb-list-name');
+    if (listNameEl) listNameEl.textContent = FALLBACK_LIST_NAME;
+
+    const analysis = analyzeCard(FALLBACK_CARD);
+    renderMissingInfo(analysis);
   }
 }
 
@@ -212,11 +249,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.documentElement) document.documentElement.scrollTop = 0;
   if (document.body) document.body.scrollTop = 0;
 
-  // Render initial data
-  renderMissingInfo(missingInfoData);
-
-  // Fetch live metadata
-  initCardData();
+  // Initialize and render live card analysis
+  initMissingInfo();
 
   // Close Popup / Modal handler
   const btnClose = document.getElementById('btn-close-popup');
@@ -253,8 +287,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Auto size popup iframe to content if supported
-  if (t && typeof t.sizeTo === 'function') {
-    const container = document.getElementById('popup-container') || document.body;
-    t.sizeTo(container);
-  }
+  resizePopup();
 });

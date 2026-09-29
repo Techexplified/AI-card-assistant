@@ -22,6 +22,10 @@
         --color-orange: #d97706;
         --color-orange-light: #fffbeb;
         --color-orange-border: #fef3c7;
+        --color-green: #16a34a;
+        --color-green-light: #f0fdf4;
+        --color-green-border: #dcfce7;
+        --color-green-text: #15803d;
         --color-text-main: #172b4d;
         --color-text-sub: #64748b;
         --color-text-muted: #94a3b8;
@@ -330,12 +334,23 @@
         flex-direction: column;
         gap: 8px;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-        transition: border-color 0.15s, box-shadow 0.15s;
+        transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
       }
 
       .item-card:hover {
         border-color: #cbd5e1;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+      }
+
+      .item-card.filled,
+      .item-card.complete {
+        background-color: var(--color-green-light);
+        border-color: var(--color-green-border);
+      }
+
+      .item-card.filled:hover,
+      .item-card.complete:hover {
+        border-color: #bbf7d0;
       }
 
       .item-top {
@@ -369,6 +384,12 @@
       .item-icon-box.optional {
         background-color: var(--color-orange-light);
         color: var(--color-orange);
+      }
+
+      .item-icon-box.filled,
+      .item-icon-box.complete {
+        background-color: var(--color-green-border);
+        color: var(--color-green);
       }
 
       .item-icon-box svg {
@@ -418,6 +439,12 @@
       .item-badge-pill.optional {
         background-color: var(--color-orange-border);
         color: var(--color-orange);
+      }
+
+      .item-badge-pill.filled,
+      .item-badge-pill.complete {
+        background-color: var(--color-green-border);
+        color: var(--color-green-text);
       }
 
       .item-bottom {
