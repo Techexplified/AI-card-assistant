@@ -1,63 +1,17 @@
-/* global window, document */
+/* global window, document, sessionStorage */
+import { TRELLO_APP_KEY, TRELLO_APP_NAME, TRELLO_APP_AUTHOR } from './config.js';
+import { runReadinessScan } from './score-service.js';
 
-// Initialize Trello Power-Up iframe interface
+// Initialize Trello Power-Up iframe interface with credentials
 var t = window.TrelloPowerUp && typeof window.TrelloPowerUp.iframe === 'function'
-  ? window.TrelloPowerUp.iframe()
+  ? window.TrelloPowerUp.iframe({
+      appKey: TRELLO_APP_KEY,
+      appName: TRELLO_APP_NAME,
+      appAuthor: TRELLO_APP_AUTHOR,
+    })
   : null;
 
-// TODO: replace with real fetch from backend AI scoring endpoint once built
-const readinessData = {
-  overallScore: 54,
-  status: 'Needs Work', // one of: 'Needs Work' | 'Almost Ready' | 'Ready'
-  analyzedAt: 'just now',
-  passingCount: 2,
-  partialCount: 1,
-  missingCount: 3,
-  categories: [
-    {
-      id: 'description',
-      title: 'Description',
-      description: 'Well-structured content',
-      score: 85,
-      status: 'passing',
-    },
-    {
-      id: 'checklist',
-      title: 'Checklist',
-      description: 'Tasks defined and structured',
-      score: 80,
-      status: 'passing',
-    },
-    {
-      id: 'attachments',
-      title: 'Attachments',
-      description: 'Some files attached',
-      score: 55,
-      status: 'partial',
-    },
-    {
-      id: 'assignee',
-      title: 'Assignee',
-      description: 'No member assigned',
-      score: 0,
-      status: 'missing',
-    },
-    {
-      id: 'due-date',
-      title: 'Due Date',
-      description: 'No deadline set',
-      score: 0,
-      status: 'missing',
-    },
-    {
-      id: 'definition-of-done',
-      title: 'Definition of Done',
-      description: 'Completion criteria missing',
-      score: 0,
-      status: 'missing',
-    },
-  ],
-};
+let isScanning = false;
 
 /**
  * Get SVG icon string for category card
@@ -98,14 +52,37 @@ function getStatusBadgeSymbol(status) {
 }
 
 /**
+ * Format relative time (e.g. "just now", "2m ago", "1h ago")
+ */
+function formatRelativeTime(timestamp) {
+  if (!timestamp) return 'just now';
+  const diffMs = Date.now() - Number(timestamp);
+  if (diffMs < 0) return 'just now';
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 10) return 'just now';
+  if (diffSec < 60) return `${diffSec}s ago`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
+
+/**
  * Create DOM element for a single category row
  */
 function createCategoryCard(cat) {
   const card = document.createElement('div');
-  const statusClass = cat.status || 'missing';
+  let statusClass = cat.status;
+  if (!statusClass) {
+    if (cat.score >= 75) statusClass = 'passing';
+    else if (cat.score >= 40) statusClass = 'partial';
+    else statusClass = 'missing';
+  }
   card.className = `category-card ${statusClass}`;
 
-  const badgeSymbol = getStatusBadgeSymbol(cat.status);
+  const badgeSymbol = getStatusBadgeSymbol(statusClass);
   const score = Math.max(0, Math.min(100, Number(cat.score) || 0));
 
   card.innerHTML = `
@@ -116,7 +93,7 @@ function createCategoryCard(cat) {
         </div>
         <div class="category-title-group">
           <span class="category-title">${cat.title}</span>
-          <span class="category-desc ${statusClass}">${cat.description}</span>
+          <span class="category-desc ${statusClass}">${cat.description || ''}</span>
         </div>
       </div>
       <div class="category-right">
@@ -133,15 +110,22 @@ function createCategoryCard(cat) {
 }
 
 /**
- * Render all components from readinessData
+ * Render all components from analyzed readiness scan
  */
 function renderReadinessScore(data) {
-  const score = Math.max(0, Math.min(100, Number(data.overallScore) || 0));
+  if (!data) return;
+  const rawScore = typeof data.overallScore === 'number'
+    ? data.overallScore
+    : (typeof data.score === 'number' ? data.score : 0);
+  const score = Math.max(0, Math.min(100, Math.round(rawScore)));
 
   // 1. Breadcrumb timestamp
   const analyzedAtEl = document.getElementById('breadcrumb-analyzed-at');
   if (analyzedAtEl) {
-    analyzedAtEl.textContent = `Analyzed ${data.analyzedAt || 'just now'}`;
+    const timeStr = typeof data.scannedAt === 'number'
+      ? formatRelativeTime(data.scannedAt)
+      : (data.analyzedAt || 'just now');
+    analyzedAtEl.textContent = `Analyzed ${timeStr}`;
   }
 
   // 2. Donut Ring Progress (radius 38 matches SVG cx=50, cy=50, r=38)
@@ -154,13 +138,13 @@ function renderReadinessScore(data) {
 
   if (donutProgress) {
     donutProgress.style.strokeDasharray = `${circumference}`;
-    donutProgress.style.strokeDashoffset = `${offset}`;
-    if (score >= 80) {
+    donutProgress.style.strokeDashoffset = `${offset.toFixed(2)}`;
+    if (score >= 85) {
       donutProgress.style.stroke = '#16a34a';
     } else if (score >= 60) {
       donutProgress.style.stroke = '#d97706';
     } else {
-      donutProgress.style.stroke = '#4f46e5';
+      donutProgress.style.stroke = '#dc2626';
     }
   }
   if (donutScoreValue) {
@@ -174,11 +158,18 @@ function renderReadinessScore(data) {
   const legendPartial = document.getElementById('legend-partial-text');
   const legendMissing = document.getElementById('legend-missing-text');
 
-  if (currentStatusText) currentStatusText.textContent = data.status;
+  let status = data.status;
+  if (!status) {
+    if (score >= 85) status = 'Ready';
+    else if (score >= 60) status = 'Almost Ready';
+    else status = 'Needs Work';
+  }
+
+  if (currentStatusText) currentStatusText.textContent = status;
 
   if (currentStatusPill) {
     currentStatusPill.className = 'current-status-pill';
-    const statusNormalized = (data.status || '').toLowerCase().replace(/\s+/g, '-');
+    const statusNormalized = status.toLowerCase().replace(/\s+/g, '-');
     if (statusNormalized === 'ready') {
       currentStatusPill.classList.add('ready');
     } else if (statusNormalized === 'almost-ready') {
@@ -188,15 +179,26 @@ function renderReadinessScore(data) {
     }
   }
 
-  if (legendPassing) legendPassing.textContent = `${data.passingCount} categories passing`;
-  if (legendPartial) legendPartial.textContent = `${data.partialCount} category partial`;
-  if (legendMissing) legendMissing.textContent = `${data.missingCount} categories missing`;
+  const categories = Array.isArray(data.categories) ? data.categories : [];
+  const passingCount = typeof data.passingCount === 'number'
+    ? data.passingCount
+    : categories.filter((c) => c.score >= 75).length;
+  const partialCount = typeof data.partialCount === 'number'
+    ? data.partialCount
+    : categories.filter((c) => c.score >= 40 && c.score < 75).length;
+  const missingCount = typeof data.missingCount === 'number'
+    ? data.missingCount
+    : categories.filter((c) => c.score < 40).length;
+
+  if (legendPassing) legendPassing.textContent = `${passingCount} categories passing`;
+  if (legendPartial) legendPartial.textContent = `${partialCount} category partial`;
+  if (legendMissing) legendMissing.textContent = `${missingCount} categories missing`;
 
   // 4. Status Scale Bar active state
   const scaleSegments = document.querySelectorAll('.scale-segment');
   scaleSegments.forEach((seg) => {
     const segStatus = seg.getAttribute('data-status');
-    if (segStatus === data.status) {
+    if (segStatus === status) {
       seg.classList.add('active');
     } else {
       seg.classList.remove('active');
@@ -207,7 +209,7 @@ function renderReadinessScore(data) {
   const categoryList = document.getElementById('category-list');
   if (categoryList) {
     categoryList.innerHTML = '';
-    (data.categories || []).forEach((cat) => {
+    categories.forEach((cat) => {
       categoryList.appendChild(createCategoryCard(cat));
     });
   }
@@ -219,9 +221,84 @@ function renderReadinessScore(data) {
   }
 }
 
+/**
+ * Execute card scan and re-render UI
+ */
+async function triggerRescan() {
+  if (isScanning) return;
+  isScanning = true;
+
+  const btnRescan = document.getElementById('btn-rescan-card');
+  if (btnRescan) {
+    btnRescan.innerHTML = '<span>⏳ Scanning card...</span>';
+    btnRescan.style.pointerEvents = 'none';
+  }
+
+  try {
+    const scanResult = await runReadinessScan(t);
+    renderReadinessScore(scanResult);
+  } catch (err) {
+    console.error('[Readiness Score] Scan failed:', err);
+  } finally {
+    isScanning = false;
+    if (btnRescan) {
+      btnRescan.innerHTML = '<span>🔄 Rescan card</span>';
+      btnRescan.style.pointerEvents = 'auto';
+    }
+  }
+}
+
+/**
+ * Initial load: check stored scan or run fresh scan
+ */
+async function loadReadinessScore() {
+  const isInsideTrello = window.self !== window.top && Boolean(t);
+
+  // 1. Fetch breadcrumb metadata
+  if (isInsideTrello && typeof t.card === 'function') {
+    Promise.all([
+      t.card('name'),
+      typeof t.list === 'function' ? t.list('name') : Promise.resolve(null),
+    ])
+      .then(([card, list]) => {
+        if (card && card.name) {
+          const cardNameEl = document.getElementById('breadcrumb-card-name');
+          if (cardNameEl) cardNameEl.textContent = card.name;
+        }
+        if (list && list.name) {
+          const listNameEl = document.getElementById('breadcrumb-list-name');
+          if (listNameEl) listNameEl.textContent = list.name;
+        }
+      })
+      .catch((e) => console.warn('[Readiness Score] Breadcrumbs error:', e));
+  }
+
+  // 2. Check stored readiness data first
+  let stored = null;
+  if (isInsideTrello && typeof t.get === 'function') {
+    try {
+      stored = await t.get('card', 'shared', 'readiness');
+    } catch (e) {}
+  }
+
+  if (!stored) {
+    try {
+      const sessionStored = sessionStorage.getItem('trello_readiness');
+      if (sessionStored) stored = JSON.parse(sessionStored);
+    } catch (e) {}
+  }
+
+  if (stored && Array.isArray(stored.categories) && stored.categories.length > 0) {
+    renderReadinessScore(stored);
+  } else {
+    // Run initial scan if no stored scan exists
+    await triggerRescan();
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-  // Render initial readiness data
-  renderReadinessScore(readinessData);
+  // Load stored scan or run scan
+  loadReadinessScore();
 
   // Close Popup / Modal handler
   const btnClose = document.getElementById('btn-close-popup');
@@ -245,13 +322,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // "Rescan card" link handler
+  // "Rescan card" button handler
   const btnRescan = document.getElementById('btn-rescan-card');
   if (btnRescan) {
     btnRescan.addEventListener('click', (event) => {
       event.preventDefault();
-      // TODO: re-fetch card data via t.card('all') and re-run AI scoring endpoint once backend exists — this is read-only, no card write-back
-      console.log('rescan triggered');
+      triggerRescan();
     });
   }
 
@@ -260,7 +336,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (linkHistory) {
     linkHistory.addEventListener('click', (event) => {
       event.preventDefault();
-      // TODO: decide if this opens another popup or navigates elsewhere once designed
       console.log('history clicked');
     });
   }

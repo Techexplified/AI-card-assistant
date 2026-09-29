@@ -1,6 +1,7 @@
 /* global window, document, sessionStorage, fetch */
 import { TRELLO_APP_KEY, TRELLO_APP_NAME, TRELLO_APP_AUTHOR } from './config.js';
 import { getScoreColor, getScoreTrackColor, getScoreStatus } from './score-utils.js';
+import { runReadinessScan } from './score-service.js';
 
 // Initialize Trello Power-Up iframe interface with app credentials
 var t = window.TrelloPowerUp && typeof window.TrelloPowerUp.iframe === 'function'
@@ -746,17 +747,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return; // Score must NOT update on failure
           }
 
-          // On success, store the score and status
-          const newScoreValue = typeof latestAiData.newScore?.value === 'number'
-            ? latestAiData.newScore.value
-            : 85;
-          const newScoreStatus = latestAiData.newScore?.status || getScoreStatus(newScoreValue);
-
-          await t.set('card', 'shared', 'readiness', {
-            score: newScoreValue,
-            status: newScoreStatus,
-            updatedAt: Date.now(),
-          });
+          // On success, run the real readiness scan on the saved card state
+          await runReadinessScan(t);
 
           // Store the checklist handoff
           await t.set('card', 'shared', 'improvementData', {
@@ -773,16 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         // Fallback for standalone preview / browser testing without Trello iframe parent
         try {
-          const newScoreValue = typeof latestAiData.newScore?.value === 'number'
-            ? latestAiData.newScore.value
-            : 85;
-          const newScoreStatus = latestAiData.newScore?.status || getScoreStatus(newScoreValue);
-
-          sessionStorage.setItem('trello_readiness', JSON.stringify({
-            score: newScoreValue,
-            status: newScoreStatus,
-            updatedAt: Date.now(),
-          }));
+          await runReadinessScan(t);
 
           sessionStorage.setItem('trello_improvementData', JSON.stringify({
             objective,

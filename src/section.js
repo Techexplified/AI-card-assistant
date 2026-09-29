@@ -21,11 +21,13 @@ export function renderSection(readiness, nextSteps) {
   const statusDescription = document.getElementById('status-description');
 
   // 1. Render Readiness Score & Status
-  if (readiness && typeof readiness.score === 'number') {
-    const score = Math.max(0, Math.min(100, Math.round(readiness.score)));
+  const rawScore = readiness && (typeof readiness.overallScore === 'number' ? readiness.overallScore : (typeof readiness.score === 'number' ? readiness.score : null));
+
+  if (rawScore !== null && rawScore !== undefined) {
+    const score = Math.max(0, Math.min(100, Math.round(rawScore)));
     const scoreColor = getScoreColor(score);
     const trackColor = getScoreTrackColor(score);
-    const status = getScoreStatus(score);
+    const status = readiness.status || getScoreStatus(score);
     const description = getScoreDescription(score);
     const offset = circumference - (score / 100) * circumference;
 
