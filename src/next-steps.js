@@ -119,6 +119,31 @@ async function getStoredImprovementData() {
 }
 
 /**
+ * Read persisted next steps cache from Trello card storage or session storage fallback
+ */
+async function getStoredNextStepsCache() {
+  let data = null;
+  if (t && typeof t.get === 'function') {
+    try {
+      data = await t.get('card', 'shared', 'aiNextStepsCache');
+    } catch (e) {
+      console.warn('[Next Steps] Could not read aiNextStepsCache from Trello card storage:', e);
+    }
+  }
+
+  if (!data) {
+    try {
+      const sessionData = sessionStorage.getItem('trello_aiNextStepsCache');
+      if (sessionData) {
+        data = JSON.parse(sessionData);
+      }
+    } catch (e) {}
+  }
+
+  return data;
+}
+
+/**
  * Call serverless endpoint to generate suggested next steps
  */
 async function fetchNextSteps(improvementData, cardName) {
@@ -169,6 +194,59 @@ function showLoadingState() {
     btnRegen.innerHTML = `<span>⏳ Generating...</span>`;
   }
 
+  autoResize();
+}
+
+/**
+ * Show empty state before next steps are generated
+ */
+function showEmptyState() {
+  const container = document.getElementById('steps-container');
+  if (container) {
+    container.innerHTML = `
+      <div class="steps-empty-state">
+        <div class="state-icon-box" style="background: var(--color-purple-light, #ede9fe); color: var(--color-primary, #5b4fe9);">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"></path>
+            <polyline points="15 6 19 6 19 10"></polyline>
+            <line x1="14" y1="11" x2="19" y2="6"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="state-title" style="color: var(--color-text-main, #0f172a);">Ready to suggest next steps</div>
+          <div class="state-desc" style="color: var(--color-text-sub, #475569);">Analyze project goals and outline actionable next phases</div>
+        </div>
+        <button type="button" id="btn-generate-next-steps" class="btn-action-state" style="background-color: var(--color-primary, #5b4fe9); color: #ffffff;">
+          <span>✨ Generate Next Steps</span>
+        </button>
+      </div>
+    `;
+
+    const btnGenerate = document.getElementById('btn-generate-next-steps');
+    if (btnGenerate) {
+      btnGenerate.addEventListener('click', () => {
+        generateNextSteps();
+      });
+    }
+  }
+
+  const btnFinish = document.getElementById('btn-finish');
+  if (btnFinish) btnFinish.disabled = true;
+
+  const btnRegen = document.getElementById('btn-regenerate');
+  if (btnRegen) {
+    btnRegen.disabled = true;
+    btnRegen.innerHTML = `
+      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <polyline points="1 20 1 14 7 14"></polyline>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      </svg>
+      <span>Regenerate</span>
+    `;
+  }
+
+  nextStepsData = [];
   autoResize();
 }
 
@@ -256,7 +334,7 @@ function showErrorState(errorMessage) {
     const btnRetry = document.getElementById('btn-retry-steps');
     if (btnRetry) {
       btnRetry.addEventListener('click', () => {
-        loadNextStepsData();
+        generateNextSteps();
       });
     }
   }
@@ -281,22 +359,31 @@ function showErrorState(errorMessage) {
 }
 
 /**
- * Coordinate loading and rendering of live AI next steps
+ * Generate fresh next steps from AI and cache them
  */
-async function loadNextStepsData() {
-  const improvementData = await getStoredImprovementData();
-
-  if (!improvementData || !improvementData.objective) {
+async function generateNextSteps() {
+  if (!currentImprovementData || !currentImprovementData.objective) {
     showMissingState();
     return;
   }
 
-  currentImprovementData = improvementData;
   showLoadingState();
 
   try {
-    const steps = await fetchNextSteps(improvementData, currentCardName);
+    const steps = await fetchNextSteps(currentImprovementData, currentCardName);
     nextStepsData = Array.isArray(steps) ? steps : [];
+
+    // Cache the AI next steps result on the card
+    if (t && typeof t.set === 'function') {
+      try {
+        await t.set('card', 'shared', 'aiNextStepsCache', nextStepsData);
+      } catch (e) {
+        console.warn('[Next Steps] Could not cache aiNextStepsCache:', e);
+      }
+    }
+    try {
+      sessionStorage.setItem('trello_aiNextStepsCache', JSON.stringify(nextStepsData));
+    } catch (e) {}
 
     // Restore buttons
     const btnFinish = document.getElementById('btn-finish');
@@ -322,8 +409,49 @@ async function loadNextStepsData() {
     if (document.body) document.body.scrollTop = 0;
     autoResize();
   } catch (err) {
-    console.error('[Next Steps] loadNextStepsData error:', err);
+    console.error('[Next Steps] generateNextSteps error:', err);
     showErrorState(err.message || 'Failed to generate next steps');
+  }
+}
+
+/**
+ * Coordinate loading and rendering of next steps (from cache or show empty state)
+ */
+async function loadNextStepsData() {
+  const improvementData = await getStoredImprovementData();
+
+  if (!improvementData || !improvementData.objective) {
+    showMissingState();
+    return;
+  }
+
+  currentImprovementData = improvementData;
+
+  const cached = await getStoredNextStepsCache();
+  if (cached && Array.isArray(cached) && cached.length > 0) {
+    nextStepsData = cached;
+
+    // Restore buttons
+    const btnFinish = document.getElementById('btn-finish');
+    if (btnFinish) btnFinish.disabled = false;
+
+    const btnRegen = document.getElementById('btn-regenerate');
+    if (btnRegen) {
+      btnRegen.disabled = false;
+      btnRegen.innerHTML = `
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span>Regenerate</span>
+      `;
+    }
+
+    renderNextSteps();
+    autoResize();
+  } else {
+    showEmptyState();
   }
 }
 
@@ -656,12 +784,11 @@ document.addEventListener('DOMContentLoaded', () => {
   setupCustomStepControl();
 
   // 4. Regenerate Button handler
-  // Note: Regenerating re-calls fetchNextSteps with stored improvementData and replaces the current list,
-  // discarding any manual edits/deletions made so far in this session.
+  // Note: Regenerating re-calls fetchNextSteps with stored improvementData and replaces the current list & cache.
   const btnRegenerate = document.getElementById('btn-regenerate');
   if (btnRegenerate) {
     btnRegenerate.addEventListener('click', () => {
-      loadNextStepsData();
+      generateNextSteps();
     });
   }
 

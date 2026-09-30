@@ -178,6 +178,31 @@ async function getStoredImprovementData() {
 }
 
 /**
+ * Read persisted checklist cache from Trello card storage or fallback session
+ */
+async function getStoredChecklistCache() {
+  let data = null;
+  if (t && typeof t.get === 'function') {
+    try {
+      data = await t.get('card', 'shared', 'aiChecklistCache');
+    } catch (e) {
+      console.warn('[Checklist Generator] Could not read aiChecklistCache from Trello card storage:', e);
+    }
+  }
+
+  if (!data) {
+    try {
+      const sessionData = sessionStorage.getItem('trello_aiChecklistCache');
+      if (sessionData) {
+        data = JSON.parse(sessionData);
+      }
+    } catch (e) {}
+  }
+
+  return data;
+}
+
+/**
  * Call serverless endpoint to generate categorized checklist
  */
 async function fetchChecklist(improvementData, cardName) {
@@ -233,6 +258,59 @@ function showLoadingState() {
   const totalCountPill = document.getElementById('total-count-pill');
   if (totalCountPill) totalCountPill.textContent = '...';
 
+  autoResize();
+}
+
+/**
+ * Show empty state before checklist is generated
+ */
+function showEmptyState() {
+  const container = document.getElementById('categories-container');
+  if (container) {
+    container.innerHTML = `
+      <div class="checklist-empty-state">
+        <div class="state-icon-box" style="background: var(--color-purple-light, #ede9fe); color: var(--color-primary, #5b4fe9);">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"></path>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="state-title" style="color: var(--color-text-main, #0f172a);">Ready to generate a checklist</div>
+          <div class="state-desc" style="color: var(--color-text-sub, #475569);">Ready to generate a checklist from your improved card</div>
+        </div>
+        <button type="button" id="btn-generate-checklist" class="btn-action-state" style="background-color: var(--color-primary, #5b4fe9); color: #ffffff;">
+          <span>✨ Generate Checklist</span>
+        </button>
+      </div>
+    `;
+
+    const btnGenerate = document.getElementById('btn-generate-checklist');
+    if (btnGenerate) {
+      btnGenerate.addEventListener('click', () => {
+        generateChecklist();
+      });
+    }
+  }
+
+  const btnSave = document.getElementById('btn-save-checklist');
+  if (btnSave) btnSave.disabled = true;
+
+  const btnRegen = document.getElementById('btn-regenerate');
+  if (btnRegen) {
+    btnRegen.disabled = true;
+    btnRegen.innerHTML = `
+      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <polyline points="1 20 1 14 7 14"></polyline>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      </svg>
+      <span>Regenerate</span>
+    `;
+  }
+
+  checklistData = [];
+  updateCountsDisplay();
   autoResize();
 }
 
@@ -321,7 +399,7 @@ function showErrorState(errorMessage) {
     const btnRetry = document.getElementById('btn-retry-checklist');
     if (btnRetry) {
       btnRetry.addEventListener('click', () => {
-        loadChecklistData();
+        generateChecklist();
       });
     }
   }
@@ -347,22 +425,31 @@ function showErrorState(errorMessage) {
 }
 
 /**
- * Coordinate loading and rendering of live AI checklist
+ * Generate a fresh checklist from AI and cache it
  */
-async function loadChecklistData() {
-  const improvementData = await getStoredImprovementData();
-
-  if (!improvementData || !improvementData.objective) {
+async function generateChecklist() {
+  if (!currentImprovementData || !currentImprovementData.objective) {
     showMissingState();
     return;
   }
 
-  currentImprovementData = improvementData;
   showLoadingState();
 
   try {
-    const categories = await fetchChecklist(improvementData, currentCardName);
+    const categories = await fetchChecklist(currentImprovementData, currentCardName);
     checklistData = Array.isArray(categories) ? categories : [];
+
+    // Cache the AI checklist result on the card
+    if (t && typeof t.set === 'function') {
+      try {
+        await t.set('card', 'shared', 'aiChecklistCache', checklistData);
+      } catch (e) {
+        console.warn('[Checklist Generator] Could not cache aiChecklistCache:', e);
+      }
+    }
+    try {
+      sessionStorage.setItem('trello_aiChecklistCache', JSON.stringify(checklistData));
+    } catch (e) {}
 
     // Restore buttons
     const btnSave = document.getElementById('btn-save-checklist');
@@ -384,8 +471,49 @@ async function loadChecklistData() {
     renderChecklist();
     autoResize();
   } catch (err) {
-    console.error('[Checklist Generator] loadChecklistData error:', err);
+    console.error('[Checklist Generator] generateChecklist error:', err);
     showErrorState(err.message || 'Failed to generate checklist');
+  }
+}
+
+/**
+ * Coordinate loading and rendering of checklist (from cache or show empty state)
+ */
+async function loadChecklistData() {
+  const improvementData = await getStoredImprovementData();
+
+  if (!improvementData || !improvementData.objective) {
+    showMissingState();
+    return;
+  }
+
+  currentImprovementData = improvementData;
+
+  const cached = await getStoredChecklistCache();
+  if (cached && Array.isArray(cached) && cached.length > 0) {
+    checklistData = cached;
+
+    // Restore buttons
+    const btnSave = document.getElementById('btn-save-checklist');
+    if (btnSave) btnSave.disabled = false;
+
+    const btnRegen = document.getElementById('btn-regenerate');
+    if (btnRegen) {
+      btnRegen.disabled = false;
+      btnRegen.innerHTML = `
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span>Regenerate</span>
+      `;
+    }
+
+    renderChecklist();
+    autoResize();
+  } else {
+    showEmptyState();
   }
 }
 
@@ -782,12 +910,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 4. Regenerate Button handler
-  // Note: Regenerating re-calls fetchChecklist with the stored improvementData and replaces the current list,
-  // discarding any manual edits/deletions made so far in this session.
+  // Note: Regenerating re-calls fetchChecklist with the stored improvementData and replaces the current list & cache.
   const btnRegenerate = document.getElementById('btn-regenerate');
   if (btnRegenerate) {
     btnRegenerate.addEventListener('click', () => {
-      loadChecklistData();
+      generateChecklist();
     });
   }
 

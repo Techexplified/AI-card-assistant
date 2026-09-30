@@ -474,6 +474,110 @@ function renderAiImprovements(data) {
 }
 
 /**
+ * Read persisted improvement cache from Trello card storage or fallback session
+ */
+async function getStoredImprovementCache() {
+  let data = null;
+  if (t && typeof t.get === 'function') {
+    try {
+      data = await t.get('card', 'shared', 'aiImprovementCache');
+    } catch (e) {
+      console.warn('[Improve Card] Could not read aiImprovementCache from Trello card storage:', e);
+    }
+  }
+
+  if (!data) {
+    try {
+      const sessionData = sessionStorage.getItem('trello_aiImprovementCache');
+      if (sessionData) {
+        data = JSON.parse(sessionData);
+      }
+    } catch (e) {}
+  }
+
+  return data;
+}
+
+/**
+ * Display empty state in the AI Improved column before generation
+ */
+function showEmptyState() {
+  latestAiData = null;
+  clearInlineSaveError();
+
+  // 1. Disable Save & Generate Checklist button
+  const btnSaveChecklist = document.getElementById('btn-save-checklist');
+  if (btnSaveChecklist) {
+    btnSaveChecklist.disabled = true;
+    btnSaveChecklist.style.opacity = '0.5';
+    btnSaveChecklist.style.cursor = 'not-allowed';
+  }
+
+  // 2. Hide Regenerate button in footer until generated
+  const btnRegenerate = document.getElementById('btn-regenerate');
+  if (btnRegenerate) {
+    btnRegenerate.style.display = 'none';
+  }
+
+  // 3. Update header pill
+  const headerPill = document.querySelector('.pill-improvements-made');
+  if (headerPill) {
+    headerPill.style.display = 'none';
+  }
+
+  // 4. Update Original column issues & current score placeholders
+  const issuesTitleEl = document.getElementById('issues-detected-title');
+  const issuesListEl = document.getElementById('issues-detected-list');
+  if (issuesTitleEl) {
+    issuesTitleEl.textContent = 'Card Analysis';
+  }
+  if (issuesListEl) {
+    issuesListEl.innerHTML = '<li style="color: var(--color-text-muted);">Click Generate to analyze issues and structure this card.</li>';
+  }
+
+  const currentScoreDonutText = document.getElementById('current-score-donut-text');
+  const currentScoreStatus = document.getElementById('current-score-status-text');
+  if (currentScoreDonutText) currentScoreDonutText.textContent = '--%';
+  if (currentScoreStatus) currentScoreStatus.textContent = 'Pending';
+
+  // 5. Render Empty Box in Right Column
+  const colImproved = document.getElementById('col-improved');
+  if (colImproved) {
+    colImproved.innerHTML = `
+      <div class="column-header">
+        <div class="column-title-group">
+          <span class="col-dot purple">●</span>
+          <span class="column-title purple">AI Improved</span>
+        </div>
+      </div>
+      <div class="card-box" style="padding: 42px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #faf5ff; border: 1.5px dashed var(--color-purple-border); border-radius: 10px;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-purple-light, #ede9fe); color: var(--color-primary, #5b4fe9); display: flex; align-items: center; justify-content: center;">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <div style="font-weight: 700; color: var(--color-text-main, #0f172a); font-size: 14px; margin-bottom: 4px;">Ready to rewrite this card</div>
+          <div style="font-size: 12px; color: var(--color-text-sub, #475569);">Generate AI improvements, tasks, and definition of done</div>
+        </div>
+        <button type="button" id="btn-generate-improvements" class="btn-save-main" style="margin-top: 4px;">
+          <span>✨ Generate Improvements</span>
+        </button>
+      </div>
+    `;
+
+    const btnGenerate = document.getElementById('btn-generate-improvements');
+    if (btnGenerate) {
+      btnGenerate.addEventListener('click', () => {
+        loadAiImprovements(currentCardDescription, currentCardName);
+      });
+    }
+  }
+
+  resizePopup();
+}
+
+/**
  * Main coordinator to fetch AI improvements and manage UI states
  */
 async function loadAiImprovements(description, cardName) {
@@ -486,6 +590,19 @@ async function loadAiImprovements(description, cardName) {
 
   try {
     const result = await fetchImprovements(description, cardName);
+
+    // Cache the AI improvement result on the card
+    if (t && typeof t.set === 'function') {
+      try {
+        await t.set('card', 'shared', 'aiImprovementCache', result);
+      } catch (e) {
+        console.warn('[Improve Card] Could not cache aiImprovementCache:', e);
+      }
+    }
+    try {
+      sessionStorage.setItem('trello_aiImprovementCache', JSON.stringify(result));
+    } catch (e) {}
+
     renderAiImprovements(result);
   } catch (err) {
     console.error('[Improve Card] fetchImprovements error:', err);
@@ -524,6 +641,16 @@ function setViewMode(mode) {
 function initCardData() {
   const isInsideTrello = window.self !== window.top && Boolean(t);
 
+  const onDataLoaded = async () => {
+    updateOriginalCardView(currentCardDescription);
+    const cached = await getStoredImprovementCache();
+    if (cached) {
+      renderAiImprovements(cached);
+    } else {
+      showEmptyState();
+    }
+  };
+
   if (isInsideTrello && typeof t.card === 'function') {
     // Fetch live card & list data from Trello with 3.5s timeout
     const fetchTrelloData = Promise.all([
@@ -549,8 +676,7 @@ function initCardData() {
           if (listNameEl) listNameEl.textContent = list.name;
         }
 
-        updateOriginalCardView(currentCardDescription);
-        loadAiImprovements(currentCardDescription, currentCardName);
+        onDataLoaded();
       })
       .catch(function (err) {
         console.warn('[Improve Card] Could not fetch live card from Trello, using sample fallback:', err);
@@ -561,8 +687,7 @@ function initCardData() {
         const listNameEl = document.getElementById('breadcrumb-list-name');
         if (listNameEl) listNameEl.textContent = FALLBACK_LIST_NAME;
 
-        updateOriginalCardView(currentCardDescription);
-        loadAiImprovements(currentCardDescription, currentCardName);
+        onDataLoaded();
       });
   } else {
     // Standalone browser preview (direct tab)
@@ -573,8 +698,7 @@ function initCardData() {
     const listNameEl = document.getElementById('breadcrumb-list-name');
     if (listNameEl) listNameEl.textContent = FALLBACK_LIST_NAME;
 
-    updateOriginalCardView(currentCardDescription);
-    loadAiImprovements(currentCardDescription, currentCardName);
+    onDataLoaded();
   }
 }
 
