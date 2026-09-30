@@ -6,6 +6,90 @@ const t = window.TrelloPowerUp && typeof window.TrelloPowerUp.iframe === 'functi
   ? window.TrelloPowerUp.iframe()
   : null;
 
+// Track next steps expansion state
+let isStepsExpanded = false;
+let currentNextSteps = [];
+
+/**
+ * Render the Next Steps list items and toggle button
+ */
+function renderNextStepsList() {
+  const nextStepsBlock = document.getElementById('next-steps-block');
+  const nextStepsList = document.getElementById('next-steps-list');
+  const countPill = document.getElementById('next-steps-count-pill');
+  const btnViewAllSteps = document.getElementById('btn-view-all-steps');
+  const viewAllText = document.getElementById('view-all-steps-text');
+  const viewAllIcon = document.getElementById('view-all-steps-icon');
+
+  if (!currentNextSteps || !Array.isArray(currentNextSteps) || currentNextSteps.length === 0) {
+    if (nextStepsBlock) {
+      nextStepsBlock.style.display = 'none';
+    }
+    return;
+  }
+
+  if (nextStepsBlock) {
+    nextStepsBlock.style.display = 'flex';
+  }
+
+  if (countPill) {
+    countPill.textContent = String(currentNextSteps.length);
+  }
+
+  const stepsToRender = isStepsExpanded ? currentNextSteps : currentNextSteps.slice(0, 3);
+
+  if (nextStepsList) {
+    nextStepsList.innerHTML = '';
+    stepsToRender.forEach((step, index) => {
+      const row = document.createElement('div');
+      row.className = 'next-step-row';
+
+      const badge = document.createElement('div');
+      badge.className = 'next-step-badge';
+      badge.textContent = String(index + 1);
+
+      const text = document.createElement('span');
+      text.className = 'next-step-text';
+      text.textContent = step.title || step.description || `Step ${index + 1}`;
+      text.title = text.textContent;
+
+      row.appendChild(badge);
+      row.appendChild(text);
+      nextStepsList.appendChild(row);
+    });
+  }
+
+  if (btnViewAllSteps && viewAllText) {
+    if (currentNextSteps.length <= 3) {
+      btnViewAllSteps.style.display = 'none';
+    } else {
+      btnViewAllSteps.style.display = 'flex';
+      if (isStepsExpanded) {
+        viewAllText.textContent = 'Show less';
+        if (viewAllIcon) {
+          viewAllIcon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
+        }
+      } else {
+        viewAllText.textContent = `View all ${currentNextSteps.length} steps`;
+        if (viewAllIcon) {
+          viewAllIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+        }
+      }
+    }
+  }
+
+  if (t && typeof t.sizeTo === 'function') {
+    try {
+      t.sizeTo('body');
+    } catch (e) {
+      try {
+        const container = document.getElementById('section-container') || document.body;
+        t.sizeTo(container);
+      } catch (err) {}
+    }
+  }
+}
+
 /**
  * Renders the card readiness score and AI Next Steps block into the DOM
  */
@@ -82,49 +166,8 @@ export function renderSection(readiness, nextSteps) {
   }
 
   // 2. Render Next Steps Block
-  const nextStepsBlock = document.getElementById('next-steps-block');
-  const nextStepsList = document.getElementById('next-steps-list');
-  const countPill = document.getElementById('next-steps-count-pill');
-  const viewAllText = document.getElementById('view-all-steps-text');
-
-  if (nextSteps && Array.isArray(nextSteps) && nextSteps.length > 0) {
-    if (countPill) {
-      countPill.textContent = String(nextSteps.length);
-    }
-    if (viewAllText) {
-      viewAllText.textContent = `View all ${nextSteps.length} step${nextSteps.length === 1 ? '' : 's'}`;
-    }
-
-    if (nextStepsList) {
-      nextStepsList.innerHTML = '';
-      const displaySteps = nextSteps.slice(0, 3);
-      displaySteps.forEach((step, index) => {
-        const row = document.createElement('div');
-        row.className = 'next-step-row';
-
-        const badge = document.createElement('div');
-        badge.className = `next-step-badge ${index === 0 ? 'step-badge-primary' : 'step-badge-secondary'}`;
-        badge.textContent = String(index + 1);
-
-        const text = document.createElement('span');
-        text.className = 'next-step-text';
-        text.textContent = step.title || step.description || `Step ${index + 1}`;
-        text.title = text.textContent;
-
-        row.appendChild(badge);
-        row.appendChild(text);
-        nextStepsList.appendChild(row);
-      });
-    }
-
-    if (nextStepsBlock) {
-      nextStepsBlock.style.display = 'flex';
-    }
-  } else {
-    if (nextStepsBlock) {
-      nextStepsBlock.style.display = 'none';
-    }
-  }
+  currentNextSteps = Array.isArray(nextSteps) ? nextSteps : [];
+  renderNextStepsList();
 }
 
 /**
@@ -192,31 +235,14 @@ function setupEventHandlers() {
     ringWrapper.addEventListener('click', handleScoreDetails);
   }
 
-  // Wire up "View all steps" button in Next Steps block
+  // Wire up "View all steps" button in Next Steps block to toggle expanded steps inline
   const btnViewAllSteps = document.getElementById('btn-view-all-steps');
   if (btnViewAllSteps) {
     btnViewAllSteps.addEventListener('click', (event) => {
-      window.scrollTo(0, 0);
-      if (window.self !== window.top && t && typeof t.modal === 'function') {
-        return t.modal({
-          title: 'Suggested Next Steps',
-          url: t.signUrl ? t.signUrl('./next-steps.html') : './next-steps.html',
-          height: 600,
-          fullscreen: false,
-          accentColor: '#5b4fe9',
-        });
-      } else if (window.self !== window.top && t && typeof t.popup === 'function') {
-        return t.popup({
-          title: 'Suggested Next Steps',
-          url: t.signUrl ? t.signUrl('./next-steps.html') : './next-steps.html',
-          height: 540,
-          mouseEvent: event,
-        });
-      } else {
-        console.log('[AI Assistant] Opening next-steps.html (standalone preview)');
-        window.scrollTo(0, 0);
-        window.location.href = './next-steps.html';
-      }
+      event.preventDefault();
+      event.stopPropagation();
+      isStepsExpanded = !isStepsExpanded;
+      renderNextStepsList();
     });
   }
 }
