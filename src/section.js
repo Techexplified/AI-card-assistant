@@ -195,7 +195,6 @@ function setupEventHandlers() {
           mouseEvent: event,
         });
       } else {
-        console.log('[AI Assistant] Opening missing-info.html (standalone preview)');
         window.scrollTo(0, 0);
         window.location.href = './missing-info.html';
       }
@@ -220,7 +219,6 @@ function setupEventHandlers() {
         mouseEvent: event,
       });
     } else {
-      console.log('[AI Assistant] Ring clicked (standalone preview)');
       window.location.href = './readiness-score.html';
     }
   };

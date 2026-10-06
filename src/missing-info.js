@@ -253,7 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
           try { t.closePopup(); } catch (e) {}
         }
       } else {
-        console.log('[Missing Info Detector] Close popup triggered (standalone preview)');
         if (window.history.length > 1) {
           window.history.back();
         } else {

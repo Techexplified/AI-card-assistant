@@ -143,7 +143,6 @@ function closePopupAction() {
       try { t.closePopup(); } catch (e) {}
     }
   } else {
-    console.log('[Checklist Generator] Close popup triggered (standalone preview)');
     if (window.history.length > 1) {
       window.history.back();
     } else {
@@ -986,7 +985,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ? t.signUrl('./next-steps.html')
         : ('./next-steps.html' + search);
 
-      console.log('[Checklist Generator] Redirecting to next-steps.html');
       window.scrollTo(0, 0);
       window.location.href = targetUrl;
     });

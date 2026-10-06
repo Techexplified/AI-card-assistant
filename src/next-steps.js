@@ -68,7 +68,6 @@ function closePopupAction() {
       try { t.closeModal(); } catch (e) {}
     }
   } else {
-    console.log('[Next Steps] Close popup triggered (standalone preview)');
     if (window.history.length > 1) {
       window.history.back();
     } else {
@@ -796,7 +795,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnFinish = document.getElementById('btn-finish');
   if (btnFinish) {
     btnFinish.addEventListener('click', async () => {
-      console.log('finish triggered', nextStepsData);
       await persistNextSteps();
       closePopupAction();
     });

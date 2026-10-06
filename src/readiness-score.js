@@ -312,7 +312,6 @@ document.addEventListener('DOMContentLoaded', () => {
           try { t.closePopup(); } catch (e) {}
         }
       } else {
-        console.log('[Card Readiness Score] Close popup triggered (standalone preview)');
         if (window.history.length > 1) {
           window.history.back();
         } else {
@@ -336,7 +335,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (linkHistory) {
     linkHistory.addEventListener('click', (event) => {
       event.preventDefault();
-      console.log('history clicked');
     });
   }
 

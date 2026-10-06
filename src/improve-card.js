@@ -762,7 +762,6 @@ document.addEventListener('DOMContentLoaded', () => {
         try { t.closeModal(); } catch (e) {}
       }
     } else {
-      console.log('[Improve Card] Close popup triggered (standalone preview)');
       if (window.history.length > 1) {
         window.history.back();
       } else {
@@ -905,7 +904,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ? t.signUrl('./checklist-generator.html')
         : ('./checklist-generator.html' + search);
 
-      console.log('[Improve Card] Redirecting to checklist-generator.html');
       window.location.href = targetUrl;
     });
   }
