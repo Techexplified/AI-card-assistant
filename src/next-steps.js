@@ -49,9 +49,7 @@ function autoResize() {
       try {
         const container = document.getElementById('popup-container') || document.body;
         t.sizeTo(container);
-      } catch (err) {
-        console.warn('[Next Steps] autoResize error:', err);
-      }
+      } catch (err) {}
     }
   }
 }
@@ -83,9 +81,7 @@ async function persistNextSteps() {
   if (t && typeof t.set === 'function') {
     try {
       await t.set('card', 'shared', 'nextSteps', nextStepsData);
-    } catch (e) {
-      console.warn('[Next Steps] Could not persist nextSteps to Trello card storage:', e);
-    }
+    } catch (e) {}
   }
   try {
     sessionStorage.setItem('trello_nextSteps', JSON.stringify(nextStepsData));
@@ -100,9 +96,7 @@ async function getStoredImprovementData() {
   if (t && typeof t.get === 'function') {
     try {
       data = await t.get('card', 'shared', 'improvementData');
-    } catch (e) {
-      console.warn('[Next Steps] Could not read improvementData from Trello card storage:', e);
-    }
+    } catch (e) {}
   }
 
   if (!data) {
@@ -125,9 +119,7 @@ async function getStoredNextStepsCache() {
   if (t && typeof t.get === 'function') {
     try {
       data = await t.get('card', 'shared', 'aiNextStepsCache');
-    } catch (e) {
-      console.warn('[Next Steps] Could not read aiNextStepsCache from Trello card storage:', e);
-    }
+    } catch (e) {}
   }
 
   if (!data) {
@@ -376,9 +368,7 @@ async function generateNextSteps() {
     if (t && typeof t.set === 'function') {
       try {
         await t.set('card', 'shared', 'aiNextStepsCache', nextStepsData);
-      } catch (e) {
-        console.warn('[Next Steps] Could not cache aiNextStepsCache:', e);
-      }
+      } catch (e) {}
     }
     try {
       sessionStorage.setItem('trello_aiNextStepsCache', JSON.stringify(nextStepsData));
@@ -408,7 +398,6 @@ async function generateNextSteps() {
     if (document.body) document.body.scrollTop = 0;
     autoResize();
   } catch (err) {
-    console.error('[Next Steps] generateNextSteps error:', err);
     showErrorState(err.message || 'Failed to generate next steps');
   }
 }
@@ -758,9 +747,7 @@ function initCardData() {
           if (listNameEl) listNameEl.textContent = list.name;
         }
       })
-      .catch(function (err) {
-        console.warn('[Next Steps] Could not fetch live card/list from Trello:', err);
-      });
+      .catch(function () {});
   }
 }
 

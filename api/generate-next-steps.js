@@ -43,7 +43,6 @@ Rules:
     const result = await callOpenRouter([{ role: 'user', content: prompt }]);
     return res.status(200).json(result);
   } catch (err) {
-    console.error('generate-next-steps error:', err);
     return res.status(500).json({ error: 'Failed to generate next steps', details: err.message });
   }
 }

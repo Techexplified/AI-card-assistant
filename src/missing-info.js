@@ -52,9 +52,7 @@ function resizePopup() {
     const popupContainer = document.getElementById('popup-container') || document.body;
     try {
       t.sizeTo(popupContainer);
-    } catch (e) {
-      console.warn('[Missing Info Detector] t.sizeTo error:', e);
-    }
+    } catch (e) {}
   }
 }
 
@@ -208,8 +206,7 @@ function initMissingInfo() {
         const analysis = analyzeCard(card || FALLBACK_CARD);
         renderMissingInfo(analysis);
       })
-      .catch((err) => {
-        console.warn('[Missing Info Detector] Using fallback card data:', err);
+      .catch(() => {
         const cardNameEl = document.getElementById('breadcrumb-card-name');
         if (cardNameEl) cardNameEl.textContent = FALLBACK_CARD.name;
         const listNameEl = document.getElementById('breadcrumb-list-name');

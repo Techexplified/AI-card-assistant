@@ -17,9 +17,7 @@ export async function runReadinessScan(t) {
   if (isInsideTrello && typeof t.card === 'function') {
     try {
       card = await t.card('desc', 'name', 'checklists', 'attachments', 'members', 'due');
-    } catch (e) {
-      console.warn('[Score Service] Could not fetch card from Trello:', e);
-    }
+    } catch (e) {}
   }
 
   const c = card || FALLBACK_SAMPLE_CARD;
@@ -53,7 +51,6 @@ export async function runReadinessScan(t) {
     if (!response.ok) throw new Error(`Server returned ${response.status}`);
     result = await response.json();
   } catch (err) {
-    console.error('AI scoring failed, using fallback:', err);
     result = scoreCardFallback(c);
     result.degraded = true; // UI can show a subtle "estimated" indicator if desired
   }
@@ -75,9 +72,7 @@ export async function runReadinessScan(t) {
   if (isInsideTrello && t && typeof t.set === 'function') {
     try {
       await t.set('card', 'shared', 'readiness', scan);
-    } catch (e) {
-      console.warn('[Score Service] Could not write readiness to Trello card storage:', e);
-    }
+    } catch (e) {}
   }
 
   try {

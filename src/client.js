@@ -1,6 +1,13 @@
 /* global window */
 import { TRELLO_APP_KEY, TRELLO_APP_NAME, TRELLO_APP_AUTHOR } from './config.js';
 
+const getIconUrl = () => {
+  if (typeof window !== 'undefined' && window.TrelloPowerUp?.util?.relativeUrl) {
+    return window.TrelloPowerUp.util.relativeUrl('./assistant.png');
+  }
+  return new URL('./assistant.png', window.location.href).href;
+};
+
 window.TrelloPowerUp.initialize(
   {
     'card-badges': function (t, options) {
@@ -12,16 +19,17 @@ window.TrelloPowerUp.initialize(
       ];
     },
     'board-buttons': function (t, options) {
+      const iconUrl = getIconUrl();
       return [
         {
           icon: {
-            dark: 'https://cdn.glitch.com/1b42d7de-6e4f-499f-9762-3c583d7f6fa5%2Ficon-dark.png?1504104006241',
-            light: 'https://cdn.glitch.com/1b42d7de-6e4f-499f-9762-3c583d7f6fa5%2Ficon-light.png?1504104006326',
+            dark: iconUrl,
+            light: iconUrl,
           },
-          text: 'Test Button',
+          text: 'AI card assistant',
           callback: function (t) {
             return t.alert({
-              message: 'Hello from your Trello Power-Up!',
+              message: 'Hello from AI Card Assistant!',
               duration: 5,
             });
           },
@@ -31,7 +39,7 @@ window.TrelloPowerUp.initialize(
     'card-back-section': function (t, options) {
       return {
         title: 'AI Assistant',
-        icon: 'https://cdn.glitch.com/1b42d7de-6e4f-499f-9762-3c583d7f6fa5%2Ficon-dark.png?1504104006241',
+        icon: getIconUrl(),
         content: {
           type: 'iframe',
           url: t.signUrl('./section.html'),

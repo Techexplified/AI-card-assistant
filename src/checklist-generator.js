@@ -124,9 +124,7 @@ function autoResize() {
       try {
         const container = document.getElementById('popup-container') || document.body;
         t.sizeTo(container);
-      } catch (err) {
-        console.warn('[Checklist Generator] autoResize error:', err);
-      }
+      } catch (err) {}
     }
   }
 }
@@ -159,9 +157,7 @@ async function getStoredImprovementData() {
   if (t && typeof t.get === 'function') {
     try {
       data = await t.get('card', 'shared', 'improvementData');
-    } catch (e) {
-      console.warn('[Checklist Generator] Could not read improvementData from Trello card storage:', e);
-    }
+    } catch (e) {}
   }
 
   if (!data) {
@@ -184,9 +180,7 @@ async function getStoredChecklistCache() {
   if (t && typeof t.get === 'function') {
     try {
       data = await t.get('card', 'shared', 'aiChecklistCache');
-    } catch (e) {
-      console.warn('[Checklist Generator] Could not read aiChecklistCache from Trello card storage:', e);
-    }
+    } catch (e) {}
   }
 
   if (!data) {
@@ -442,9 +436,7 @@ async function generateChecklist() {
     if (t && typeof t.set === 'function') {
       try {
         await t.set('card', 'shared', 'aiChecklistCache', checklistData);
-      } catch (e) {
-        console.warn('[Checklist Generator] Could not cache aiChecklistCache:', e);
-      }
+      } catch (e) {}
     }
     try {
       sessionStorage.setItem('trello_aiChecklistCache', JSON.stringify(checklistData));
@@ -470,7 +462,6 @@ async function generateChecklist() {
     renderChecklist();
     autoResize();
   } catch (err) {
-    console.error('[Checklist Generator] generateChecklist error:', err);
     showErrorState(err.message || 'Failed to generate checklist');
   }
 }
@@ -878,9 +869,7 @@ function initCardData() {
           if (listNameEl) listNameEl.textContent = list.name;
         }
       })
-      .catch(function (err) {
-        console.warn('[Checklist Generator] Could not fetch live card/list from Trello:', err);
-      });
+      .catch(function () {});
   }
 }
 
@@ -934,9 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isAuth) {
               try {
                 await restApi.authorize({ scope: 'read,write' });
-              } catch (authErr) {
-                console.warn('[Checklist Generator] Trello auth denied or failed:', authErr);
-              }
+              } catch (authErr) {}
               isAuth = await restApi.isAuthorized();
             }
 
@@ -970,9 +957,7 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             }
           }
-        } catch (err) {
-          console.warn('[Checklist Generator] Error saving checklists to Trello:', err);
-        }
+        } catch (err) {}
       }
 
       // Store in session storage fallback for standalone preview

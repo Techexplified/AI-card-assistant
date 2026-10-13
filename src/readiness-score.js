@@ -238,7 +238,6 @@ async function triggerRescan() {
     const scanResult = await runReadinessScan(t);
     renderReadinessScore(scanResult);
   } catch (err) {
-    console.error('[Readiness Score] Scan failed:', err);
   } finally {
     isScanning = false;
     if (btnRescan) {
@@ -270,7 +269,7 @@ async function loadReadinessScore() {
           if (listNameEl) listNameEl.textContent = list.name;
         }
       })
-      .catch((e) => console.warn('[Readiness Score] Breadcrumbs error:', e));
+      .catch(() => {});
   }
 
   // 2. Check stored readiness data first

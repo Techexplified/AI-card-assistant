@@ -63,9 +63,7 @@ function resizePopup() {
     const popupContainer = document.getElementById('popup-container') || document.body;
     try {
       t.sizeTo(popupContainer);
-    } catch (e) {
-      console.warn('[Improve Card] t.sizeTo error:', e);
-    }
+    } catch (e) {}
   }
 }
 
@@ -481,9 +479,7 @@ async function getStoredImprovementCache() {
   if (t && typeof t.get === 'function') {
     try {
       data = await t.get('card', 'shared', 'aiImprovementCache');
-    } catch (e) {
-      console.warn('[Improve Card] Could not read aiImprovementCache from Trello card storage:', e);
-    }
+    } catch (e) {}
   }
 
   if (!data) {
@@ -595,9 +591,7 @@ async function loadAiImprovements(description, cardName) {
     if (t && typeof t.set === 'function') {
       try {
         await t.set('card', 'shared', 'aiImprovementCache', result);
-      } catch (e) {
-        console.warn('[Improve Card] Could not cache aiImprovementCache:', e);
-      }
+      } catch (e) {}
     }
     try {
       sessionStorage.setItem('trello_aiImprovementCache', JSON.stringify(result));
@@ -605,7 +599,6 @@ async function loadAiImprovements(description, cardName) {
 
     renderAiImprovements(result);
   } catch (err) {
-    console.error('[Improve Card] fetchImprovements error:', err);
     showErrorState(err.message || 'Failed to generate improvements');
   }
 }
@@ -678,8 +671,7 @@ function initCardData() {
 
         onDataLoaded();
       })
-      .catch(function (err) {
-        console.warn('[Improve Card] Could not fetch live card from Trello, using sample fallback:', err);
+      .catch(function () {
         currentCardDescription = FALLBACK_DESCRIPTION;
         currentCardName = FALLBACK_CARD_NAME;
         const cardNameEl = document.getElementById('breadcrumb-card-name');
@@ -822,7 +814,6 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
               await restApi.authorize({ scope: 'read,write' });
             } catch (authErr) {
-              console.warn('[Improve Card] Trello Auth denied or failed:', authErr);
               showInlineSaveError('Trello access is needed to update the description');
               resetSaveButton(btnSaveChecklist);
               return;
@@ -880,7 +871,6 @@ document.addEventListener('DOMContentLoaded', () => {
             definitionOfDone,
           });
         } catch (err) {
-          console.error('[Improve Card] Save error:', err);
           showInlineSaveError(err.message || 'Trello access is needed to update the description');
           resetSaveButton(btnSaveChecklist);
           return;

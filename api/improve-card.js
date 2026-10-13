@@ -44,7 +44,6 @@ Rules:
     ]);
     return res.status(200).json(result);
   } catch (err) {
-    console.error('improve-card error:', err);
     return res.status(500).json({ error: 'Failed to generate improvements', details: err.message });
   }
 }
