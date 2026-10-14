@@ -78,13 +78,18 @@ function renderNextStepsList() {
     }
   }
 
-  if (t && typeof t.sizeTo === 'function') {
+  if (window.self !== window.top && t && typeof t.sizeTo === 'function') {
     try {
-      t.sizeTo('body');
+      Promise.resolve(t.sizeTo('body')).catch(() => {
+        try {
+          const container = document.getElementById('section-container') || document.body;
+          Promise.resolve(t.sizeTo(container)).catch(() => {});
+        } catch (err) {}
+      });
     } catch (e) {
       try {
         const container = document.getElementById('section-container') || document.body;
-        t.sizeTo(container);
+        Promise.resolve(t.sizeTo(container)).catch(() => {});
       } catch (err) {}
     }
   }
@@ -253,7 +258,7 @@ if (t && typeof t.render === 'function') {
       t.get('card', 'shared', 'nextSteps'),
     ]).then(function ([readiness, nextSteps]) {
       renderSection(readiness, nextSteps);
-      return t.sizeTo('body');
+      return Promise.resolve(t.sizeTo('body')).catch(() => {});
     });
   });
 }

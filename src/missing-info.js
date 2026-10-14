@@ -48,10 +48,10 @@ function getItemSvgIcon(id) {
  * Resize Trello iframe to content height
  */
 function resizePopup() {
-  if (t && typeof t.sizeTo === 'function') {
+  if (window.self !== window.top && t && typeof t.sizeTo === 'function') {
     const popupContainer = document.getElementById('popup-container') || document.body;
     try {
-      t.sizeTo(popupContainer);
+      Promise.resolve(t.sizeTo(popupContainer)).catch(() => {});
     } catch (e) {}
   }
 }
@@ -244,10 +244,10 @@ document.addEventListener('DOMContentLoaded', () => {
     btnClose.addEventListener('click', () => {
       if (window.self !== window.top && t) {
         if (typeof t.closeModal === 'function') {
-          try { t.closeModal(); } catch (e) {}
+          try { Promise.resolve(t.closeModal()).catch(() => {}); } catch (e) {}
         }
         if (typeof t.closePopup === 'function') {
-          try { t.closePopup(); } catch (e) {}
+          try { Promise.resolve(t.closePopup()).catch(() => {}); } catch (e) {}
         }
       } else {
         if (window.history.length > 1) {

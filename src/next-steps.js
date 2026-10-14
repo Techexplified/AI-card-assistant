@@ -42,13 +42,18 @@ const PRIORITY_THEMES = {
  * Auto-resize iframe in Trello if supported
  */
 function autoResize() {
-  if (t && typeof t.sizeTo === 'function') {
+  if (window.self !== window.top && t && typeof t.sizeTo === 'function') {
     try {
-      t.sizeTo('body');
+      Promise.resolve(t.sizeTo('body')).catch(() => {
+        try {
+          const container = document.getElementById('popup-container') || document.body;
+          Promise.resolve(t.sizeTo(container)).catch(() => {});
+        } catch (err) {}
+      });
     } catch (e) {
       try {
         const container = document.getElementById('popup-container') || document.body;
-        t.sizeTo(container);
+        Promise.resolve(t.sizeTo(container)).catch(() => {});
       } catch (err) {}
     }
   }
@@ -60,10 +65,10 @@ function autoResize() {
 function closePopupAction() {
   if (window.self !== window.top && t) {
     if (typeof t.closePopup === 'function') {
-      try { t.closePopup(); } catch (e) {}
+      try { Promise.resolve(t.closePopup()).catch(() => {}); } catch (e) {}
     }
     if (typeof t.closeModal === 'function') {
-      try { t.closeModal(); } catch (e) {}
+      try { Promise.resolve(t.closeModal()).catch(() => {}); } catch (e) {}
     }
   } else {
     if (window.history.length > 1) {

@@ -215,9 +215,11 @@ function renderReadinessScore(data) {
   }
 
   // Adjust popup size cleanly after render
-  if (t && typeof t.sizeTo === 'function') {
+  if (window.self !== window.top && t && typeof t.sizeTo === 'function') {
     const container = document.getElementById('popup-container') || document.body;
-    t.sizeTo(container);
+    try {
+      Promise.resolve(t.sizeTo(container)).catch(() => {});
+    } catch (e) {}
   }
 }
 
@@ -305,10 +307,10 @@ document.addEventListener('DOMContentLoaded', () => {
     btnClose.addEventListener('click', () => {
       if (window.self !== window.top && t) {
         if (typeof t.closeModal === 'function') {
-          try { t.closeModal(); } catch (e) {}
+          try { Promise.resolve(t.closeModal()).catch(() => {}); } catch (e) {}
         }
         if (typeof t.closePopup === 'function') {
-          try { t.closePopup(); } catch (e) {}
+          try { Promise.resolve(t.closePopup()).catch(() => {}); } catch (e) {}
         }
       } else {
         if (window.history.length > 1) {
@@ -338,8 +340,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Auto size popup iframe to content if supported
-  if (t && typeof t.sizeTo === 'function') {
+  if (window.self !== window.top && t && typeof t.sizeTo === 'function') {
     const container = document.getElementById('popup-container') || document.body;
-    t.sizeTo(container);
+    try {
+      Promise.resolve(t.sizeTo(container)).catch(() => {});
+    } catch (e) {}
   }
 });
