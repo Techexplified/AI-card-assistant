@@ -1,5 +1,6 @@
 /* global window */
 import { TRELLO_APP_KEY, TRELLO_APP_NAME, TRELLO_APP_AUTHOR } from './config.js';
+import { signPowerUpUrl } from './trello-url.js';
 
 const getIconUrl = () => {
   if (typeof window !== 'undefined' && window.TrelloPowerUp?.util?.relativeUrl) {
@@ -42,7 +43,7 @@ window.TrelloPowerUp.initialize(
         icon: getIconUrl(),
         content: {
           type: 'iframe',
-          url: t.signUrl('./section.html'),
+          url: signPowerUpUrl(t, './section.html'),
           height: 220,
         },
       };

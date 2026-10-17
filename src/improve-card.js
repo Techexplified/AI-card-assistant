@@ -1,5 +1,6 @@
 /* global window, document, sessionStorage, fetch */
 import { TRELLO_APP_KEY, TRELLO_APP_NAME, TRELLO_APP_AUTHOR } from './config.js';
+import { signPowerUpUrl } from './trello-url.js';
 import { getScoreColor, getScoreTrackColor, getScoreStatus } from './score-utils.js';
 import { runReadinessScan } from './score-service.js';
 
@@ -889,10 +890,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Open the Smart Checklist Generator popup as already wired
-      const search = window.location.search || '';
-      const targetUrl = (t && typeof t.signUrl === 'function')
-        ? t.signUrl('./checklist-generator.html')
-        : ('./checklist-generator.html' + search);
+      const targetUrl = signPowerUpUrl(t, './checklist-generator.html');
 
       window.location.href = targetUrl;
     });

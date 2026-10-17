@@ -1,5 +1,6 @@
 /* global window, document */
 import { TRELLO_APP_KEY, TRELLO_APP_NAME, TRELLO_APP_AUTHOR } from './config.js';
+import { signPowerUpUrl } from './trello-url.js';
 import { analyzeCard } from './card-analysis.js';
 
 // Initialize Trello Power-Up iframe interface with app credentials
@@ -263,10 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnAiComplete = document.getElementById('btn-ai-complete');
   if (btnAiComplete) {
     btnAiComplete.addEventListener('click', () => {
-      const search = window.location.search || '';
-      const targetUrl = (t && typeof t.signUrl === 'function')
-        ? t.signUrl('./improve-card.html')
-        : ('./improve-card.html' + search);
+      const targetUrl = signPowerUpUrl(t, './improve-card.html');
       window.location.href = targetUrl;
     });
   }

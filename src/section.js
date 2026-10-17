@@ -1,5 +1,6 @@
 /* global window, document, sessionStorage */
 import { getScoreColor, getScoreTrackColor, getScoreStatus, getScoreDescription } from './score-utils.js';
+import { signPowerUpUrl } from './trello-url.js';
 
 // Initialize Trello Power-Up iframe interface
 const t = window.TrelloPowerUp && typeof window.TrelloPowerUp.iframe === 'function'
@@ -187,7 +188,7 @@ function setupEventHandlers() {
       if (window.self !== window.top && t && typeof t.modal === 'function') {
         return t.modal({
           title: 'Missing Info Detector',
-          url: t.signUrl ? t.signUrl('./missing-info.html') : './missing-info.html',
+          url: signPowerUpUrl(t, './missing-info.html'),
           height: 580,
           fullscreen: false,
           accentColor: '#5b4fe9',
@@ -195,7 +196,7 @@ function setupEventHandlers() {
       } else if (window.self !== window.top && t && typeof t.popup === 'function') {
         return t.popup({
           title: 'Missing Info Detector',
-          url: t.signUrl ? t.signUrl('./missing-info.html') : './missing-info.html',
+          url: signPowerUpUrl(t, './missing-info.html'),
           height: 520,
           mouseEvent: event,
         });
@@ -211,7 +212,7 @@ function setupEventHandlers() {
     if (window.self !== window.top && t && typeof t.modal === 'function') {
       return t.modal({
         title: 'Card Readiness Score',
-        url: t.signUrl ? t.signUrl('./readiness-score.html') : './readiness-score.html',
+        url: signPowerUpUrl(t, './readiness-score.html'),
         height: 580,
         fullscreen: false,
         accentColor: '#5b4fe9',
@@ -219,7 +220,7 @@ function setupEventHandlers() {
     } else if (window.self !== window.top && t && typeof t.popup === 'function') {
       return t.popup({
         title: 'Card Readiness Score',
-        url: t.signUrl ? t.signUrl('./readiness-score.html') : './readiness-score.html',
+        url: signPowerUpUrl(t, './readiness-score.html'),
         height: 520,
         mouseEvent: event,
       });

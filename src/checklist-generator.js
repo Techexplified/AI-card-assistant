@@ -1,5 +1,6 @@
 /* global window, document, sessionStorage, fetch */
 import { TRELLO_APP_KEY, TRELLO_APP_NAME, TRELLO_APP_AUTHOR } from './config.js';
+import { signPowerUpUrl } from './trello-url.js';
 
 // Initialize Trello Power-Up iframe interface with credentials
 var t = window.TrelloPowerUp && typeof window.TrelloPowerUp.iframe === 'function'
@@ -340,10 +341,7 @@ function showMissingState() {
     const btnGo = document.getElementById('btn-go-improve');
     if (btnGo) {
       btnGo.addEventListener('click', () => {
-        const search = window.location.search || '';
-        const targetUrl = (t && typeof t.signUrl === 'function')
-          ? t.signUrl('./improve-card.html')
-          : ('./improve-card.html' + search);
+        const targetUrl = signPowerUpUrl(t, './improve-card.html');
         window.location.href = targetUrl;
       });
     }
@@ -970,10 +968,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionStorage.setItem('trello_checklistData', JSON.stringify(checklistData));
       } catch (e) {}
 
-      const search = window.location.search || '';
-      const targetUrl = (t && typeof t.signUrl === 'function')
-        ? t.signUrl('./next-steps.html')
-        : ('./next-steps.html' + search);
+      const targetUrl = signPowerUpUrl(t, './next-steps.html');
 
       window.scrollTo(0, 0);
       window.location.href = targetUrl;
